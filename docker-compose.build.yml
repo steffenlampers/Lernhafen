@@ -1,0 +1,20 @@
+# Image selbst bauen statt laden:  docker compose -f docker-compose.build.yml up -d --build
+services:
+  lernhafen:
+    build: .
+    container_name: lernhafen
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8088}:${PORT:-8088}"
+    environment:
+      TZ: ${TZ:-Europe/Berlin}
+      PORT: ${PORT:-8088}
+      APP_PASSWORD: ${APP_PASSWORD:-}
+      APP_NAME: ${APP_NAME:-Lernhafen}
+      PROFILE: ${PROFILE:-allgemein}
+      SYNC_HOUR: ${SYNC_HOUR:-6}
+      OCR_LANG: ${OCR_LANG:-deu+eng}
+    volumes:
+      - ./data:/data
+    security_opt:
+      - no-new-privileges:true

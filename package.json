@@ -1,0 +1,17 @@
+{
+  "name": "lernhafen",
+  "version": "0.1.0",
+  "description": "Selbst gehostete, ADHS-freundliche Lernzentrale für Ausbildung, Schule und Studium",
+  "license": "MIT",
+  "private": true,
+  "main": "src/server.js",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/unit.test.js test/api.test.js test/auth.test.js test/features.test.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "sharp": "^0.33.5"
+  }
+}

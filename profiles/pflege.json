@@ -1,0 +1,133 @@
+{
+  "id": "pflege",
+  "name": "Pflege (Ausbildung)",
+  "terms": {
+    "subject": "Fach",
+    "subjects": "Fächer",
+    "lesson": "Doppelstunde"
+  },
+  "eventTypes": [
+    {
+      "id": "hausaufgabe",
+      "label": "Hausaufgabe",
+      "tone": "blue"
+    },
+    {
+      "id": "klausur",
+      "label": "Klausur",
+      "tone": "red",
+      "exam": true
+    },
+    {
+      "id": "test",
+      "label": "Test",
+      "tone": "amber",
+      "exam": true
+    },
+    {
+      "id": "abgabe",
+      "label": "Abgabe",
+      "tone": "violet"
+    },
+    {
+      "id": "praktikum",
+      "label": "Praxiseinsatz",
+      "tone": "green"
+    },
+    {
+      "id": "lernen",
+      "label": "Lernblock",
+      "tone": "cyan",
+      "study": true
+    },
+    {
+      "id": "sonst",
+      "label": "Sonstiges",
+      "tone": "grey"
+    }
+  ],
+  "blocks": [
+    [
+      "08:00",
+      "09:30"
+    ],
+    [
+      "09:50",
+      "11:20"
+    ],
+    [
+      "11:50",
+      "13:20"
+    ],
+    [
+      "13:30",
+      "15:00"
+    ]
+  ],
+  "practicum": {
+    "enabled": true,
+    "label": "Praxisstunden",
+    "targetHours": 2500
+  },
+  "noteTemplate": "Thema: \nMitschrift:\n\nOffene Fragen:\n\nAufgaben:\n",
+  "links": [
+    {
+      "group": "KI-Helfer",
+      "items": [
+        [
+          "Gemini",
+          "Fragen und Zusammenfassen",
+          "https://gemini.google.com/"
+        ],
+        [
+          "NotebookLM",
+          "Aus deinen Unterlagen lernen",
+          "https://notebooklm.google.com/"
+        ],
+        [
+          "Perplexity",
+          "Recherche mit Quellen",
+          "https://www.perplexity.ai/"
+        ]
+      ]
+    },
+    {
+      "group": "Lernen",
+      "items": [
+        [
+          "AMBOSS",
+          "Wissensdatenbank",
+          "https://www.amboss.com/de"
+        ],
+        [
+          "Thieme eRef",
+          "Fachbücher digital",
+          "https://eref.thieme.de/"
+        ],
+        [
+          "DocCheck Flexikon",
+          "Medizinisches Lexikon",
+          "https://flexikon.doccheck.com/de/"
+        ],
+        [
+          "AnkiWeb",
+          "Karteikarten",
+          "https://ankiweb.net/"
+        ]
+      ]
+    }
+  ],
+  "grading": {
+    "scale": "de"
+  },
+  "credits": {
+    "enabled": false,
+    "label": "Leistungspunkte",
+    "target": 0
+  },
+  "sources": [
+    "schulmanager",
+    "ical",
+    "manual"
+  ]
+}

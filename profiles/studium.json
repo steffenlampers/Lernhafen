@@ -1,0 +1,141 @@
+{
+  "id": "studium",
+  "name": "Studium",
+  "terms": {
+    "subject": "Modul",
+    "subjects": "Module",
+    "lesson": "Veranstaltung"
+  },
+  "eventTypes": [
+    {
+      "id": "uebung",
+      "label": "Übungsblatt",
+      "tone": "blue"
+    },
+    {
+      "id": "klausur",
+      "label": "Klausur",
+      "tone": "red",
+      "exam": true
+    },
+    {
+      "id": "referat",
+      "label": "Referat",
+      "tone": "amber"
+    },
+    {
+      "id": "hausarbeit",
+      "label": "Hausarbeit",
+      "tone": "violet"
+    },
+    {
+      "id": "praktikum",
+      "label": "Praktikum",
+      "tone": "green"
+    },
+    {
+      "id": "lernen",
+      "label": "Lernblock",
+      "tone": "cyan",
+      "study": true
+    },
+    {
+      "id": "sonst",
+      "label": "Sonstiges",
+      "tone": "grey"
+    }
+  ],
+  "blocks": [
+    [
+      "08:00",
+      "09:30"
+    ],
+    [
+      "09:50",
+      "11:20"
+    ],
+    [
+      "11:50",
+      "13:20"
+    ],
+    [
+      "13:30",
+      "15:00"
+    ]
+  ],
+  "practicum": {
+    "enabled": false,
+    "label": "Praktikum",
+    "targetHours": 0
+  },
+  "noteTemplate": "Thema: \nMitschrift:\n\nOffene Fragen:\n\nLiteratur und Aufgaben:\n",
+  "links": [
+    {
+      "group": "KI-Helfer",
+      "items": [
+        [
+          "Gemini",
+          "Fragen und Zusammenfassen",
+          "https://gemini.google.com/"
+        ],
+        [
+          "NotebookLM",
+          "Aus deinen Unterlagen lernen",
+          "https://notebooklm.google.com/"
+        ],
+        [
+          "Perplexity",
+          "Recherche mit Quellen",
+          "https://www.perplexity.ai/"
+        ]
+      ]
+    },
+    {
+      "group": "Recherche",
+      "items": [
+        [
+          "Google Scholar",
+          "Wissenschaftliche Artikel",
+          "https://scholar.google.com/"
+        ],
+        [
+          "Zotero",
+          "Literaturverwaltung",
+          "https://www.zotero.org/"
+        ],
+        [
+          "AnkiWeb",
+          "Karteikarten",
+          "https://ankiweb.net/"
+        ]
+      ]
+    },
+    {
+      "group": "Hochschule",
+      "items": [
+        [
+          "Moodle",
+          "Lernplattform (Adresse deiner Hochschule eintragen)",
+          "https://moodle.org/"
+        ],
+        [
+          "Google Drive",
+          "Dateien",
+          "https://drive.google.com/"
+        ]
+      ]
+    }
+  ],
+  "grading": {
+    "scale": "de"
+  },
+  "credits": {
+    "enabled": true,
+    "label": "ECTS-Punkte",
+    "target": 180
+  },
+  "sources": [
+    "ical",
+    "manual"
+  ]
+}

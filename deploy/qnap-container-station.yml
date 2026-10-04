@@ -1,0 +1,19 @@
+# Zum Einfügen in QNAP Container Station: Anwendungen → Erstellen → YAML einfügen.
+# Vorher ersetzen: APP_PASSWORD durch ein eigenes Passwort.
+# Die Daten (Termine, Mitschriften, Scans) liegen in /share/Container/lernhafen/data – dort ist auch das Backup.
+services:
+  lernhafen:
+    image: ghcr.io/steffenlampers/lernhafen:latest
+    container_name: lernhafen
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+    environment:
+      TZ: Europe/Berlin
+      APP_PASSWORD: "bitte-aendern"
+      APP_NAME: Lernhafen
+      SYNC_HOUR: "6"
+    volumes:
+      - /share/Container/lernhafen/data:/data
+    security_opt:
+      - no-new-privileges:true

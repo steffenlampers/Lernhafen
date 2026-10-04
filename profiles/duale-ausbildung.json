@@ -1,0 +1,131 @@
+{
+  "id": "duale-ausbildung",
+  "name": "Duale Ausbildung (Berufsschule und Betrieb)",
+  "terms": {
+    "subject": "Fach",
+    "subjects": "Fächer",
+    "lesson": "Stunde"
+  },
+  "eventTypes": [
+    {
+      "id": "hausaufgabe",
+      "label": "Aufgabe",
+      "tone": "blue"
+    },
+    {
+      "id": "klausur",
+      "label": "Klassenarbeit",
+      "tone": "red",
+      "exam": true
+    },
+    {
+      "id": "test",
+      "label": "Test",
+      "tone": "amber",
+      "exam": true
+    },
+    {
+      "id": "abgabe",
+      "label": "Abgabe",
+      "tone": "violet"
+    },
+    {
+      "id": "berichtsheft",
+      "label": "Berichtsheft",
+      "tone": "green"
+    },
+    {
+      "id": "lernen",
+      "label": "Lernblock",
+      "tone": "cyan",
+      "study": true
+    },
+    {
+      "id": "sonst",
+      "label": "Sonstiges",
+      "tone": "grey"
+    }
+  ],
+  "blocks": [
+    [
+      "07:45",
+      "08:30"
+    ],
+    [
+      "08:30",
+      "09:15"
+    ],
+    [
+      "09:30",
+      "10:15"
+    ],
+    [
+      "10:15",
+      "11:00"
+    ],
+    [
+      "11:15",
+      "12:00"
+    ],
+    [
+      "12:00",
+      "12:45"
+    ]
+  ],
+  "practicum": {
+    "enabled": false,
+    "label": "Betriebsstunden",
+    "targetHours": 0
+  },
+  "noteTemplate": "Thema: \nMitschrift:\n\nOffene Fragen:\n\nAufgaben:\n",
+  "links": [
+    {
+      "group": "KI-Helfer",
+      "items": [
+        [
+          "Gemini",
+          "Fragen und Zusammenfassen",
+          "https://gemini.google.com/"
+        ],
+        [
+          "NotebookLM",
+          "Aus deinen Unterlagen lernen",
+          "https://notebooklm.google.com/"
+        ],
+        [
+          "Perplexity",
+          "Recherche mit Quellen",
+          "https://www.perplexity.ai/"
+        ]
+      ]
+    },
+    {
+      "group": "Ausbildung",
+      "items": [
+        [
+          "IHK",
+          "Prüfungen und Infos",
+          "https://www.ihk.de/"
+        ],
+        [
+          "Planet Beruf",
+          "Berufe und Ausbildung",
+          "https://planet-beruf.de/"
+        ]
+      ]
+    }
+  ],
+  "grading": {
+    "scale": "de"
+  },
+  "credits": {
+    "enabled": false,
+    "label": "Leistungspunkte",
+    "target": 0
+  },
+  "sources": [
+    "schulmanager",
+    "ical",
+    "manual"
+  ]
+}

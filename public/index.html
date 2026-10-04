@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0E7C7B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Lernhafen</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="top-row">
+      <div class="brand" id="brand">Lernhafen</div>
+      <div class="top-actions">
+        <button class="btn" data-act="search">Suche</button>
+        <button class="btn" data-act="focus" id="fokusBtn">Fokus <span class="num" id="miniTimer"></span></button>
+        <button class="btn" data-act="more" id="moreBtn" aria-pressed="false">Mehr</button>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" id="tabs"></nav>
+  </header>
+  <main id="main"><p class="empty" style="margin-top:24px">Lädt …</p></main>
+</div>
+<button class="fab" data-act="scan" id="fab">Scannen</button>
+<div id="modal" hidden></div>
+<script src="js/core.js"></script>
+<script src="js/views.js"></script>
+<script src="js/edit.js"></script>
+<script src="js/learn.js"></script>
+<script src="js/scan.js"></script>
+<script src="js/setup.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+# Lernhafen – fertiges Image, kein Bauen auf dem NAS nötig.
+# Starten:  docker compose up -d      Danach im Browser: http://<NAS-Adresse>:8088
+# Einstellungen stehen in der Datei ".env" (Vorlage: .env.example), alles ist optional.
+services:
+  lernhafen:
+    image: ghcr.io/steffenlampers/lernhafen:${LERNHAFEN_VERSION:-latest}
+    container_name: lernhafen
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8088}:${PORT:-8088}"
+    environment:
+      TZ: ${TZ:-Europe/Berlin}
+      PORT: ${PORT:-8088}
+      APP_PASSWORD: ${APP_PASSWORD:-}
+      APP_NAME: ${APP_NAME:-Lernhafen}
+      PROFILE: ${PROFILE:-allgemein}
+      SYNC_HOUR: ${SYNC_HOUR:-6}
+      OCR_LANG: ${OCR_LANG:-deu+eng}
+    volumes:
+      - ./data:/data
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"

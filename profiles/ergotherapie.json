@@ -1,0 +1,203 @@
+{
+  "id": "ergotherapie",
+  "name": "Ergotherapie (Ausbildung)",
+  "terms": {
+    "subject": "Fach",
+    "subjects": "Fächer",
+    "lesson": "Doppelstunde"
+  },
+  "eventTypes": [
+    {
+      "id": "hausaufgabe",
+      "label": "Hausaufgabe",
+      "tone": "blue"
+    },
+    {
+      "id": "studienaufgabe",
+      "label": "Studienaufgabe",
+      "tone": "cyan"
+    },
+    {
+      "id": "klausur",
+      "label": "Klausur",
+      "tone": "red",
+      "exam": true
+    },
+    {
+      "id": "test",
+      "label": "Test",
+      "tone": "amber",
+      "exam": true
+    },
+    {
+      "id": "abgabe",
+      "label": "Abgabe",
+      "tone": "violet"
+    },
+    {
+      "id": "praktikum",
+      "label": "Praktikum",
+      "tone": "green"
+    },
+    {
+      "id": "lernen",
+      "label": "Lernblock",
+      "tone": "cyan",
+      "study": true
+    },
+    {
+      "id": "sonst",
+      "label": "Sonstiges",
+      "tone": "grey"
+    }
+  ],
+  "blocks": [
+    [
+      "08:00",
+      "09:30"
+    ],
+    [
+      "09:50",
+      "11:20"
+    ],
+    [
+      "11:50",
+      "13:20"
+    ],
+    [
+      "13:30",
+      "15:00"
+    ]
+  ],
+  "practicum": {
+    "enabled": true,
+    "label": "Praktische Ausbildung",
+    "targetHours": 1700
+  },
+  "noteTemplate": "Thema: \nMitschrift:\n\nOffene Fragen:\n\nHausaufgabe oder Studienaufgabe:\n",
+  "links": [
+    {
+      "group": "KI-Helfer",
+      "items": [
+        [
+          "Gemini",
+          "Fragen und Zusammenfassen",
+          "https://gemini.google.com/"
+        ],
+        [
+          "NotebookLM",
+          "Aus deinen Unterlagen lernen",
+          "https://notebooklm.google.com/"
+        ],
+        [
+          "Perplexity",
+          "Recherche mit Quellen",
+          "https://www.perplexity.ai/"
+        ],
+        [
+          "Canva",
+          "Präsentationen und Plakate",
+          "https://www.canva.com/"
+        ]
+      ]
+    },
+    {
+      "group": "Lernen",
+      "items": [
+        [
+          "Kenhub",
+          "Anatomie-Atlas und Quizze",
+          "https://www.kenhub.com/de"
+        ],
+        [
+          "DocCheck Flexikon",
+          "Medizinisches Lexikon",
+          "https://flexikon.doccheck.com/de/"
+        ],
+        [
+          "DocCheck",
+          "Fachportal",
+          "https://www.doccheck.com/"
+        ],
+        [
+          "AMBOSS",
+          "Wissensdatenbank",
+          "https://www.amboss.com/de"
+        ],
+        [
+          "Thieme eRef",
+          "Fachbücher digital",
+          "https://eref.thieme.de/"
+        ],
+        [
+          "AnkiWeb",
+          "Karteikarten",
+          "https://ankiweb.net/"
+        ],
+        [
+          "Quizlet",
+          "Lernkarten",
+          "https://quizlet.com/de"
+        ]
+      ]
+    },
+    {
+      "group": "Ergotherapie",
+      "items": [
+        [
+          "DVE",
+          "Berufsverband",
+          "https://dve.info/"
+        ],
+        [
+          "Physiopedia",
+          "Therapie-Wissen",
+          "https://www.physio-pedia.com/"
+        ],
+        [
+          "OTseeker",
+          "Studien und Evidenz",
+          "https://www.otseeker.com/"
+        ]
+      ]
+    },
+    {
+      "group": "Google",
+      "items": [
+        [
+          "Drive",
+          "Alle Dateien",
+          "https://drive.google.com/"
+        ],
+        [
+          "Docs",
+          "Alle Dokumente",
+          "https://docs.google.com/document/u/0/"
+        ],
+        [
+          "Gmail",
+          "Postfach",
+          "https://mail.google.com/"
+        ],
+        [
+          "Classroom",
+          "Aufgaben der Schule",
+          "https://classroom.google.com/"
+        ]
+      ]
+    }
+  ],
+  "grading": {
+    "scale": "de"
+  },
+  "credits": {
+    "enabled": false,
+    "label": "Leistungspunkte",
+    "target": 0
+  },
+  "sources": [
+    "schulmanager",
+    "ical",
+    "manual"
+  ]
+}

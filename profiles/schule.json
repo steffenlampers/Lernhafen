@@ -1,0 +1,136 @@
+{
+  "id": "schule",
+  "name": "Schule (Oberstufe)",
+  "terms": {
+    "subject": "Fach",
+    "subjects": "Fächer",
+    "lesson": "Stunde"
+  },
+  "eventTypes": [
+    {
+      "id": "hausaufgabe",
+      "label": "Hausaufgabe",
+      "tone": "blue"
+    },
+    {
+      "id": "klausur",
+      "label": "Klausur",
+      "tone": "red",
+      "exam": true
+    },
+    {
+      "id": "test",
+      "label": "Test",
+      "tone": "amber",
+      "exam": true
+    },
+    {
+      "id": "abgabe",
+      "label": "Referat/Abgabe",
+      "tone": "violet"
+    },
+    {
+      "id": "lernen",
+      "label": "Lernblock",
+      "tone": "cyan",
+      "study": true
+    },
+    {
+      "id": "sonst",
+      "label": "Sonstiges",
+      "tone": "grey"
+    }
+  ],
+  "blocks": [
+    [
+      "07:55",
+      "08:40"
+    ],
+    [
+      "08:45",
+      "09:30"
+    ],
+    [
+      "09:50",
+      "10:35"
+    ],
+    [
+      "10:40",
+      "11:25"
+    ],
+    [
+      "11:45",
+      "12:30"
+    ],
+    [
+      "12:35",
+      "13:20"
+    ]
+  ],
+  "practicum": {
+    "enabled": false,
+    "label": "Praktikum",
+    "targetHours": 0
+  },
+  "noteTemplate": "Thema: \nMitschrift:\n\nOffene Fragen:\n\nHausaufgabe:\n",
+  "links": [
+    {
+      "group": "KI-Helfer",
+      "items": [
+        [
+          "Gemini",
+          "Fragen und Zusammenfassen",
+          "https://gemini.google.com/"
+        ],
+        [
+          "NotebookLM",
+          "Aus deinen Unterlagen lernen",
+          "https://notebooklm.google.com/"
+        ],
+        [
+          "Perplexity",
+          "Recherche mit Quellen",
+          "https://www.perplexity.ai/"
+        ]
+      ]
+    },
+    {
+      "group": "Lernen",
+      "items": [
+        [
+          "Serlo",
+          "Mathe und mehr",
+          "https://de.serlo.org/"
+        ],
+        [
+          "Khan Academy",
+          "Videokurse",
+          "https://de.khanacademy.org/"
+        ],
+        [
+          "LEO",
+          "Wörterbuch",
+          "https://dict.leo.org/"
+        ],
+        [
+          "Planet Schule",
+          "Lernvideos",
+          "https://www.planet-schule.de/"
+        ]
+      ]
+    }
+  ],
+  "grading": {
+    "scale": "points15"
+  },
+  "credits": {
+    "enabled": false,
+    "label": "Leistungspunkte",
+    "target": 0
+  },
+  "sources": [
+    "schulmanager",
+    "ical",
+    "manual"
+  ]
+}
