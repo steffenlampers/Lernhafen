@@ -57,6 +57,20 @@ docker compose up -d      # fertiges Image laden und starten
 
 Lokal bauen statt laden: `docker compose -f docker-compose.build.yml up -d --build`.
 
+### Eigene IP-Adresse statt Port-Nummer
+
+Statt `http://nas:8088` kann Lernhafen im Heimnetz eine **eigene Adresse** bekommen, z. B. `http://192.168.1.50`. Der Container erscheint dann im Netzwerk wie ein eigenes Gerät (Docker-Netz „macvlan“) und läuft auf Port 80, ohne Konflikt mit dem NAS.
+
+1. Notiere dir deine Netzwerkdaten: Heimnetz (z. B. `192.168.1.0/24`), Router (z. B. `192.168.1.1`) und eine **freie** Adresse außerhalb des DHCP-Bereichs deines Routers (z. B. `192.168.1.50`).
+2. Den Netzwerk-Anschluss des NAS findest du per SSH mit `ip addr` (meist `eth0`).
+3. **QNAP Container Station:** Inhalt von [`deploy/qnap-eigene-ip.yml`](deploy/qnap-eigene-ip.yml) einfügen, die mit „ANPASSEN“ markierten Stellen ändern, erstellen.
+   **Docker Compose:** In `.env` die Werte `LAN_PARENT`, `LAN_SUBNET`, `LAN_GATEWAY`, `LAN_IP` eintragen, dann `docker compose -f docker-compose.eigene-ip.yml up -d`.
+4. Öffne `http://<deine Adresse>` auf dem PC oder Handy.
+
+Gut zu wissen: Bei macvlan erreicht **das NAS selbst** den Container nicht unter dieser Adresse, alle anderen Geräte schon. Wenn dein Router die Adresse vergeben soll, trage sie dort als feste Zuordnung ein oder wähle eine Adresse außerhalb des DHCP-Bereichs. Ein schöner Name wie `lernhafen.fritz.box` geht über den Router (Heimnetz → Netzwerk → Gerät → Name).
+
+Wenn macvlan bei dir nicht geht (manche Netzwerkkarten oder virtuelle Switches blockieren es), nimm das normale Compose mit einem freien Port, z. B. `PORT=8090`.
+
 ### Auf dem Handy installieren
 
 Im Browser des Handys „Zum Startbildschirm hinzufügen“ wählen, dann startet die App wie eine normale App.
@@ -99,7 +113,7 @@ Unter „Mehr → Daten und Verbindungen → Termine im Handy-Kalender“ findes
 
 - **Automatisch getestet (28 Tests):** Plan-Umwandlung, Schulmanager-Passwort-Hash, iCal (Wiederholungen, Ausnahmen, Verlegung, Zeitzonen, mehrtägig), Kalender-Abruf mit Fehlern, Handy-Abo (Inhalt, Erinnerungen, Falten, Link erneuern), Dateien (Typen, Pfadtricks), Scans, Suche, Sicherung, Anmeldung und Sperre, alle Profile.
 - **Im echten Browser durchgespielt (Handy- und Desktop-Breite, hell und dunkel):** Einrichtungs-Assistent, Kalender-Link, Heute mit Uhrzeiten, Mitschrift zur Stunde, Termin mit Schritten, Lernplan, Karteikarten-Runde, Noten, Datei- und Scan-Upload, Wochenplan von Hand, Handy-Abo, Suche.
-- **Nicht getestet:** Der Live-Abruf bei Schulmanager mit echten Zugangsdaten, die Texterkennung mit Tesseract im fertigen Image (der GitHub-Lauf prüft, dass Deutsch und die PDF-Schrift vorhanden sind), der Betrieb auf einem echten NAS und die Kalender-Abos auf iPhone und Android.
+- **Nicht getestet:** Die eigene IP per macvlan auf einem echten NAS (die Konfiguration ist geprüft, der Start mit Port 80 ohne Root läuft im GitHub-Test), der Live-Abruf bei Schulmanager mit echten Zugangsdaten, die Texterkennung mit Tesseract im fertigen Image (der GitHub-Lauf prüft, dass Deutsch und die PDF-Schrift vorhanden sind), der Betrieb auf einem echten NAS und die Kalender-Abos auf iPhone und Android.
 - **Noch nicht enthalten:** Google-Anbindung (Docs, Drive, Gmail), Seitenzuschnitt und Kantenerkennung per Hand, Handschrifterkennung, mehrere Nutzer, englische Oberfläche.
 
 ## Entwicklung

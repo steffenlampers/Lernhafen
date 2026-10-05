@@ -1,0 +1,42 @@
+# Für QNAP Container Station: Anwendungen → Erstellen → YAML einfügen.
+# Lernhafen bekommt eine EIGENE IP-ADRESSE im Heimnetz und ist ohne Port-Nummer erreichbar (http://192.168.1.50).
+#
+# Vorher anpassen (4 Stellen, mit "ANPASSEN" markiert):
+#   - parent:      Netzwerk-Anschluss des NAS. Meist eth0. Per SSH mit "ip addr" prüfen
+#                  (bei Link-Aggregation z. B. bond0, bei einem virtuellen Switch z. B. qvs0)
+#   - subnet, gateway: dein Heimnetz und dein Router
+#   - ipv4_address: freie Adresse außerhalb des DHCP-Bereichs deines Routers
+#   - APP_PASSWORD: eigenes Passwort
+#
+# Die Daten liegen in /share/Container/lernhafen/data (dort ist auch das Backup).
+# Wichtig: Bei macvlan erreicht das NAS selbst den Container nicht unter dieser IP. PC und Handy schon.
+services:
+  lernhafen:
+    image: ghcr.io/steffenlampers/lernhafen:latest
+    container_name: lernhafen
+    restart: unless-stopped
+    networks:
+      lan:
+        ipv4_address: 192.168.1.50            # ANPASSEN
+    environment:
+      TZ: Europe/Berlin
+      PORT: "80"
+      APP_PASSWORD: "bitte-aendern"           # ANPASSEN
+      APP_NAME: Lernhafen
+      SYNC_HOUR: "6"
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: 0
+    volumes:
+      - /share/Container/lernhafen/data:/data
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  lan:
+    driver: macvlan
+    driver_opts:
+      parent: eth0                            # ANPASSEN
+    ipam:
+      config:
+        - subnet: 192.168.1.0/24              # ANPASSEN
+          gateway: 192.168.1.1                # ANPASSEN

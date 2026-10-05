@@ -1,0 +1,48 @@
+# Lernhafen mit EIGENER IP-ADRESSE im Heimnetz (macvlan), ohne Port-Nummer im Browser: http://192.168.1.50
+# Der Container wird im Netzwerk wie ein eigenes Gerät sichtbar. Port 80 bleibt frei von Konflikten mit dem NAS.
+#
+# Einstellen in der Datei ".env" (Vorlage: .env.example, Abschnitt "Eigene IP"):
+#   LAN_PARENT  Netzwerk-Anschluss des NAS (meist eth0, per SSH mit "ip addr" prüfen)
+#   LAN_SUBNET  dein Heimnetz, z. B. 192.168.1.0/24
+#   LAN_GATEWAY dein Router, z. B. 192.168.1.1
+#   LAN_IP      freie Adresse für Lernhafen, außerhalb des DHCP-Bereichs deines Routers, z. B. 192.168.1.50
+#
+# Starten:  docker compose -f docker-compose.eigene-ip.yml up -d
+# Wichtig:  Das NAS selbst erreicht den Container bei macvlan NICHT unter dieser IP. Alle anderen Geräte (PC, Handy) schon.
+services:
+  lernhafen:
+    image: ghcr.io/steffenlampers/lernhafen:${LERNHAFEN_VERSION:-latest}
+    container_name: lernhafen
+    restart: unless-stopped
+    networks:
+      lan:
+        ipv4_address: ${LAN_IP:-192.168.1.50}
+    environment:
+      TZ: ${TZ:-Europe/Berlin}
+      PORT: 80
+      APP_PASSWORD: ${APP_PASSWORD:-}
+      APP_NAME: ${APP_NAME:-Lernhafen}
+      PROFILE: ${PROFILE:-allgemein}
+      SYNC_HOUR: ${SYNC_HOUR:-6}
+      OCR_LANG: ${OCR_LANG:-deu+eng}
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: 0     # Port 80 ohne Root-Rechte
+    volumes:
+      - ./data:/data
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+networks:
+  lan:
+    driver: macvlan
+    driver_opts:
+      parent: ${LAN_PARENT:-eth0}
+    ipam:
+      config:
+        - subnet: ${LAN_SUBNET:-192.168.1.0/24}
+          gateway: ${LAN_GATEWAY:-192.168.1.1}
