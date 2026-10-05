@@ -39,34 +39,15 @@ function subModal(k) {
     { del: k && S.subjects[k] ? () => { delete S.subjects[k]; openSub = ''; } : null });
 }
 
-/* ---------- Mitschriften ---------- */
-function noteModal(k, id, prefill = {}) {
-  const found = id ? noteById(id) : null, n = found ? found.n : Object.assign({ id: uid(), date: today(), title: '', body: '', scans: [] }, prefill);
-  const scans = (n.scans || []).map(scanById).filter(Boolean);
-  showSheet(found ? 'Mitschrift' : 'Neue Mitschrift', `<form id="mf">
-    ${F('Titel', 'title', n.title, 'text', 'maxlength="140" required')}${F('Datum', 'date', n.date, 'date')}
-    <label class="field"><span>Mitschrift</span><textarea name="body" id="nbody" rows="10">${esc(n.body)}</textarea></label>
-    ${scans.length ? `<div class="field"><span>Gescannte Seiten</span>${scans.map(s => `<div class="stack" style="margin-bottom:10px"><div class="thumbs">${Array.from({ length: s.pages }, (_, i) => `<a href="/api/scans/${s.id}/file/p${i + 1}.jpg" target="_blank" rel="noopener"><img src="/api/scans/${s.id}/file/p${i + 1}.jpg" alt="Seite ${i + 1}" loading="lazy"></a>`).join('')}</div>
-      <div class="row small">${scanBadge(s)}${s.ocr === 'ok' ? `<button type="button" class="btn sm" data-act="scantext" data-id="${s.id}">Erkannten Text einfügen</button><a class="btn sm" href="/api/scans/${s.id}/file/doc.pdf" target="_blank" rel="noopener">PDF öffnen</a>` : ''}</div></div>`).join('')}</div>` : ''}
-    <div class="row end">${found ? '<button type="button" class="btn danger" id="mdel" style="margin-right:auto">Löschen</button>' : ''}<button type="button" class="btn ghost" id="mx">Abbrechen</button><button class="btn primary">Speichern</button></div></form>`);
-  $('#mx').onclick = closeModal;
-  if (found) $('#mdel').onclick = () => { S.notes[found.k] = S.notes[found.k].filter(x => x.id !== id); closeModal(); save(); render(); };
-  $('#mf').onsubmit = e => {
-    e.preventDefault(); const d = Object.fromEntries(new FormData(e.target));
-    Object.assign(n, { title: d.title.trim(), date: d.date, body: d.body });
-    if (!found) notesOf(k).push(n);
-    closeModal(); save(); render(); toast('Gespeichert');
-  };
-  $('#nbody').focus();
-}
+/* ---------- Mitschrift zu einer Stunde ---------- */
 function quickNote(date, bf, k) {
   const slot = `${date}|${bf}|${k}`, ex = findNote(slot);
-  if (ex) return noteModal(ex.k, ex.n.id);
+  if (ex) return openDoc(ex.id);
   const b = blocksOn(date).find(x => x.bf === bf && x.v.some(l => baseKey(l.s) === k)); if (!b) return;
   const l = b.v.find(x => baseKey(x.s) === k && !cancelled(x)) || b.v[0], sj = subj(k);
-  const head = `${DAYS[dowOf(date)]}, ${date.slice(8)}.${date.slice(5, 7)}.${date.slice(0, 4)} · ${b.timed ? b.start + ' Uhr' : 'Block ' + bf} · ${l.s}`;
-  const body = `Zeit: ${b.start ? b.start + (b.end ? '–' + b.end : '') + ' Uhr' : '-'} · Lehrkraft: ${l.t || '-'} · Raum: ${l.r || '-'}${sj.name ? ' · ' + sj.name : ''}\n${P.noteTemplate}`;
-  noteModal(k, null, { title: head, body, date, slot, scans: [] });
+  const title = `${DAYS[dowOf(date)]} ${date.slice(8)}.${date.slice(5, 7)}. ${b.timed ? b.start + ' Uhr' : 'Block ' + bf} ${l.s}`;
+  const text = `Zeit: ${b.start ? b.start + (b.end ? '–' + b.end : '') + ' Uhr' : '-'} · Lehrkraft: ${l.t || '-'} · Raum: ${l.r || '-'}${sj.name ? ' · ' + sj.name : ''}\n${P.noteTemplate}`;
+  newNote(k, { title, date, slot, text });
 }
 const GUESS = () => {
   const t = today(), now = new Date(), nm = now.getHours() * 60 + now.getMinutes(), bl = blocksOn(t).filter(b => b.start && !b.v.every(cancelled));

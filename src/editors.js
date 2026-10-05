@@ -109,4 +109,52 @@ async function slidesWrite(id, slides) {
 }
 async function slidesTemplate() { return slidesBuild([{ title: 'Titel der Präsentation', body: 'Erster Punkt\nZweiter Punkt' }]); }
 
-module.exports = { docRead, docWrite, sheetRead, sheetWrite, slidesRead, slidesWrite, slidesTemplate };
+/* ---------- Mitschriften: ganz normale Word-Dokumente im Ordner des Fachs ---------- */
+const escHtml = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const textToHtml = text => String(text || '').split(/\n/).map(l => `<p>${escHtml(l) || '<br>'}</p>`).join('');
+const dayName = d => ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][new Date(d + 'T12:00:00').getDay()];
+/** Neue Mitschrift anlegen. Existiert zu dem Slot (Stunde) schon eine, wird sie zurückgegeben. */
+async function noteCreate({ subject, title, date, slot, text }) {
+  subject = String(subject || ''); date = /^\d{4}-\d\d-\d\d$/.test(date || '') ? date : new Date().toISOString().slice(0, 10);
+  if (slot) { const ex = files.list().find(f => f.slot === slot); if (ex) return ex; }
+  const name = `${date} ${String(title || '').trim() || 'Mitschrift'}`.slice(0, 80);
+  const rec = files.create('dokument', subject, name);
+  files.update(rec.id, { note: true, noteDate: date, slot: slot || '' });
+  await docWrite(rec.id, textToHtml(text));
+  return files.list().find(f => f.id === rec.id);
+}
+/** Alte Mitschriften aus dem Datenspeicher (state.notes) einmalig in Dokumente umwandeln. */
+async function notesMigrate(store) {
+  const st = store.read('state', null); if (!st || !st.notes) return 0;
+  let n = 0;
+  for (const [subject, list] of Object.entries(st.notes)) {
+    const keep = [];
+    for (const note of list || []) {
+      try { await noteCreate({ subject, title: note.title, date: note.date, slot: note.slot, text: note.body }); n++; } catch (e) { keep.push(note); }
+    }
+    st.notes[subject] = keep;
+  }
+  if (n) { st._rev = Date.now(); store.write('state', st); }
+  return n;
+}
+
+/* ---------- Suche im Text der Dokumente ---------- */
+const textCache = new Map();
+async function docText(f, p) {
+  const key = f.id + f.modified, c = textCache.get(f.id);
+  if (c && c.key === key) return c.text;
+  let text = ''; try { text = (await mammoth.extractRawText({ buffer: fs.readFileSync(p) })).value; } catch (e) { /* kaputte Datei */ }
+  textCache.set(f.id, { key, text }); return text;
+}
+async function searchDocs(q) {
+  const out = [];
+  for (const f of files.list().filter(x => /\.docx$/i.test(x.name)).slice(0, 400)) {
+    const p = files.filePath(f.id); if (!p) continue;
+    const text = await docText(f, p), i = text.toLowerCase().indexOf(q);
+    if (i >= 0 || f.name.toLowerCase().includes(q)) out.push({ id: f.id, name: f.name, subject: f.subject, note: !!f.note, snippet: i >= 0 ? text.slice(Math.max(0, i - 30), i + 90).replace(/\s+/g, ' ') : '' });
+    if (out.length >= 30) break;
+  }
+  return out;
+}
+
+module.exports = { noteCreate, notesMigrate, searchDocs, dayName, docRead, docWrite, sheetRead, sheetWrite, slidesRead, slidesWrite, slidesTemplate };

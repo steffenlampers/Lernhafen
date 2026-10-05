@@ -65,12 +65,32 @@ function replace(id, buf) {
 }
 function update(id, patch) {
   const a = list(), f = a.find(x => x.id === id); if (!f) return null;
+  if (typeof patch.name === 'string' && patch.name.trim() && patch.name !== f.name) {          // umbenennen (die Endung bleibt erhalten)
+    const e0 = path.extname(f.name);
+    let n = safe(patch.name, f.name); if (path.extname(n).toLowerCase() !== e0.toLowerCase()) n += e0;
+    if (n !== f.name) {
+      const oldP = f.path && abs(f.path), dir = path.posix.dirname(f.path || ''), rel = unique(path.posix.join(dir === '.' ? '' : dir, n)), np = abs(rel);
+      if (oldP && np && fs.existsSync(oldP)) { fs.renameSync(oldP, np); f.path = rel; f.name = path.posix.basename(rel); }
+      else if (!f.path) f.name = n;
+    }
+  }
   if (typeof patch.subject === 'string' && patch.subject !== f.subject) {      // in den Ordner des neuen Fachs verschieben
     const oldP = abs(f.path), rel = relFor(patch.subject, f.name), np = path.join(root(), rel);
     if (oldP && fs.existsSync(oldP)) { fs.mkdirSync(path.dirname(np), { recursive: true }); fs.renameSync(oldP, np); f.path = rel; }
     f.subject = patch.subject.slice(0, 60);
   }
+  for (const k of ['slot', 'noteDate']) if (typeof patch[k] === 'string') f[k] = patch[k].slice(0, 80);
+  if (typeof patch.note === 'boolean') f.note = patch.note;
   store.write('files', a); hooks.change(); return f;
+}
+/** Reihenfolge der Dateien eines Fachs festlegen: ids in der gewünschten Reihenfolge. */
+function reorder(subject, ids) {
+  const a = list(), slots = [], mine = [];
+  a.forEach((f, i) => { if ((f.subject || '') === (subject || '')) { slots.push(i); mine.push(f); } });
+  const byId = new Map(mine.map(f => [f.id, f])), first = (Array.isArray(ids) ? ids : []).filter(i => byId.has(i));
+  const ordered = first.map(i => byId.get(i)).concat(mine.filter(f => !first.includes(f.id)));
+  slots.forEach((pos, k) => { a[pos] = ordered[k]; });
+  store.write('files', a); return true;
 }
 function remove(id) {
   const f = find(id); if (!f) return false;
@@ -122,4 +142,4 @@ function sendHeaders(f) {
 }
 const out = f => Object.assign({}, f, { kind: kindOf(f.name), editable: editable(f.name) });
 
-module.exports = { hooks, reindex, list: () => list().map(out), add, create, find, filePath, replace, update, remove, mirror, unmirror, migrate, sendHeaders, kindOf, editable, root, safe };
+module.exports = { hooks, reindex, list: () => list().map(out), add, create, find, filePath, replace, update, reorder, remove, mirror, unmirror, migrate, sendHeaders, kindOf, editable, root, safe };

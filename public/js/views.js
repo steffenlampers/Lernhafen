@@ -13,9 +13,7 @@ function subjectKeys() {
   (S.timetable || []).forEach(e => ks.add(nbsp(e.subject)));
   return [...ks].filter(Boolean).sort((a, b) => a.localeCompare(b, 'de'));
 }
-const notesOf = k => (S.notes[k] = S.notes[k] || []);
-function findNote(slot) { for (const [k, l] of Object.entries(S.notes)) for (const n of l) if (n.slot === slot) return { k, n }; return null; }
-function noteById(id) { for (const [k, l] of Object.entries(S.notes)) for (const n of l) if (n.id === id) return { k, n }; return null; }
+const findNote = slot => FILES.find(f => f.note && f.slot === slot) || null;
 const scanById = id => SCANS.find(s => s.id === id);
 
 /* ---------- Stunden ---------- */
@@ -180,7 +178,7 @@ function vFach() {
   return `<div class="grid"><div class="full row between"><div><h2>Meine ${esc(P.terms.subjects)}</h2><p class="muted small">Tippe auf ein ${esc(P.terms.subject)} für Mitschriften, Scans, Dateien und Links.</p></div><button class="btn" data-act="subnew">${esc(P.terms.subject)} hinzufügen</button></div>
   <div class="full subjects">${ks.length ? ks.map(k => {
     const s = subj(k), nx = S.events.filter(e => e.sid === k && !e.done && diffDays(ed(e), t) >= 0).sort((a, b) => ed(a).localeCompare(ed(b)))[0];
-    const nn = (S.notes[k] || []).length, ns = SCANS.filter(x => x.subject === k).length;
+    const nn = FILES.filter(f => f.subject === k && f.note).length, ns = SCANS.filter(x => x.subject === k).length;
     return `<button class="card stack" data-act="subopen" data-k="${esc(k)}" style="text-align:left;cursor:pointer;font:inherit;color:inherit">
       <h3 class="row" style="flex-wrap:nowrap"><i class="dot" style="background:${colorOf(k)}"></i><span>${esc(k)}${s.name ? ` <span class="muted" style="font-weight:500">${esc(s.name)}</span>` : ''}</span></h3>
       ${nx ? `<div class="small"><span class="chip type ${tone(nx.type)}">${esc(T(nx.type))}</span> ${esc(nx.title)} · <span class="${rel(ed(nx))[1]}">${rel(ed(nx))[0]}</span></div>` : ''}
@@ -188,7 +186,7 @@ function vFach() {
   }).join('') : `<p class="empty">Sobald ein Stundenplan eingerichtet ist, erscheinen deine ${esc(P.terms.subjects)} hier. Du kannst sie auch von Hand hinzufügen.</p>`}</div></div>`;
 }
 function vSubject(k) {
-  const s = subj(k), notes = notesOf(k).slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.id.localeCompare(a.id));
+  const s = subj(k);
   const scans = SCANS.filter(x => x.subject === k), files = FILES.filter(f => f.subject === k), evs = S.events.filter(e => e.sid === k && !e.done).sort((a, b) => ed(a).localeCompare(ed(b))).slice(0, 4);
   const cards = S.cards.filter(c => c.sid === k).length;
   return `<div class="grid one"><div class="row between" style="margin-top:4px"><button class="btn sm ghost" data-act="subclose">‹ Alle ${esc(P.terms.subjects)}</button><button class="btn sm" data-act="subedit" data-k="${esc(k)}">Name und Links</button></div>
@@ -197,7 +195,7 @@ function vSubject(k) {
     <p class="small muted" style="margin-top:8px">${cards} Karteikarte${cards === 1 ? '' : 'n'}${P.credits.enabled && s.credits ? ` · ${s.credits} ${esc(P.credits.label)}` : ''}</p>
     ${s.links.length ? `<div style="margin-top:12px">${s.links.map(l => `<a class="doc" href="${esc(url(l.u))}" target="_blank" rel="noopener">${esc(l.t || l.u)}</a>`).join('')}</div>` : ''}</div>
   ${evs.length ? `<div class="card"><div class="card-head"><h2>Anstehend</h2></div>${evs.map(evRow).join('')}</div>` : ''}
-  <div class="card"><div class="card-head"><h2>Mitschriften</h2></div>${notes.length ? notes.map(n => `<div class="item"><div class="grow"><b>${esc(n.title || 'Ohne Titel')}</b><div class="small muted">${n.date ? fmtDate(n.date) : ''}${n.scans && n.scans.length ? ` · ${n.scans.length} Scan${n.scans.length === 1 ? '' : 's'}` : ''}</div>${n.body ? `<div class="small muted">${esc(n.body.replace(/\s+/g, ' ').slice(0, 100))}</div>` : ''}</div><button class="btn sm" data-act="noteopen" data-id="${n.id}">Öffnen</button></div>`).join('') : '<p class="empty">Noch keine Mitschrift. Lege eine an oder scanne eine Seite.</p>'}</div>
+  ${notesCard(k)}
   ${docsCard(k)}
   <details class="more" ${scans.length ? 'open' : ''}><summary>Scans (${scans.length})</summary><div class="card" style="margin-top:8px">${scans.length ? scans.map(scanRow).join('') : '<p class="empty">Noch keine Scans.</p>'}</div></details></div>`;
 }

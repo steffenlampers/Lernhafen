@@ -129,6 +129,7 @@ app.post('/api/library/new', wrap(async (req, res) => {
   const b = req.body || {};
   res.json(files.create(b.kind, b.subject, b.name, b.kind === 'praesentation' ? await editors.slidesTemplate() : undefined));
 }));
+app.post('/api/library/note', wrap(async (req, res) => res.json(await editors.noteCreate(req.body || {}))));
 app.get('/api/editor/doc/:id', wrap(async (req, res) => res.json(await editors.docRead(req.params.id))));
 app.put('/api/editor/doc/:id', express.json({ limit: '8mb' }), wrap(async (req, res) => { const f = await editors.docWrite(req.params.id, (req.body || {}).html); res.json({ modified: f.modified, size: f.size }); }));
 app.get('/api/editor/sheet/:id', wrap(async (req, res) => res.json(await editors.sheetRead(req.params.id))));
@@ -137,6 +138,7 @@ app.get('/api/editor/slides/:id', wrap(async (req, res) => res.json(await editor
 app.put('/api/editor/slides/:id', express.json({ limit: '8mb' }), wrap(async (req, res) => { const f = await editors.slidesWrite(req.params.id, (req.body || {}).slides); res.json({ modified: f.modified, size: f.size }); }));
 
 /* ---- Dateien zu Fächern ---- */
+app.post('/api/files/order', wrap(async (req, res) => { files.reorder(String((req.body || {}).subject || ''), (req.body || {}).ids); res.json({ files: files.list() }); }));
 app.get('/api/files', (req, res) => res.json({ files: files.list() }));
 app.post('/api/files/:id/subject', wrap(async (req, res) => { const f = files.update(req.params.id, { subject: String((req.body || {}).subject || '') }); if (!f) throw new Error('Datei nicht gefunden.'); res.json(f); }));
 app.post('/api/files', express.raw({ type: () => true, limit: '100mb' }), wrap(async (req, res) => {
@@ -184,15 +186,15 @@ app.post('/api/backup/restore', wrap(async (req, res) => {
 }));
 
 /* ---- Suche über Mitschriften und Scans ---- */
-app.get('/api/search', (req, res) => {
+app.get('/api/search', wrap(async (req, res) => {
   const q = String(req.query.q || '').toLowerCase().trim();
-  if (q.length < 2) return res.json({ notes: [], scans: [] });
+  if (q.length < 2) return res.json({ notes: [], scans: [], docs: [] });
   const st = store.read('state', {}) || {}, notes = [];
   for (const [subject, list] of Object.entries(st.notes || {})) {
     for (const n of list || []) if ((n.title + ' ' + n.body).toLowerCase().includes(q)) notes.push({ subject, id: n.id, title: n.title, date: n.date });
   }
-  res.json({ notes: notes.slice(0, 30), scans: scans.search(q).slice(0, 30) });
-});
+  res.json({ notes: notes.slice(0, 30), scans: scans.search(q).slice(0, 30), docs: await editors.searchDocs(q) });
+}));
 
 app.get('/manifest.webmanifest', (req, res) => {
   const name = ((store.read('state', {}) || {}).settings || {}).appName || config.appName;
@@ -213,6 +215,7 @@ if (require.main === module) {
     console.log(`${config.appName} ${config.version} läuft auf Port ${config.port}, Daten in ${config.dataDir}`);
     files.migrate();
     files.reindex();
+    editors.notesMigrate(store).then(n => { if (n) console.log(n + ' Mitschriften in Dokumente umgewandelt'); }).catch(e => console.log('Mitschriften-Umwandlung: ' + e.message));
     gdrive.start();
     scans.resume();
     scheduler.start();

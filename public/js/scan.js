@@ -12,7 +12,7 @@ function scanSheet(preK) {
     <div class="thumbs" id="scanThumbs" style="min-height:8px"></div><p class="small" id="scanMsg" style="min-height:1.4em;margin-top:6px"></p>
     <label class="field" style="margin-top:8px"><span>${esc(P.terms.subject)}</span><select id="scanSub">${`<option value="">Kein ${esc(P.terms.subject)}</option>` + ks.map(x => `<option value="${esc(x)}" ${x === k ? 'selected' : ''}>${esc(subName(x))}</option>`).join('')}</select></label>
     <label class="field"><span>Titel</span><input type="text" id="scanTitle" maxlength="120" placeholder="z. B. Handout Plexus brachialis"></label>
-    <label class="chk"><input type="checkbox" id="scanNote" checked><span>Als Mitschrift-Eintrag ablegen</span></label>
+    <label class="chk"><input type="checkbox" id="scanNote" checked><span>Als Mitschrift anlegen (Dokument zum Weiterschreiben)</span></label>
     <div class="row end"><button class="btn ghost" data-act="scancancel">Abbrechen</button><button class="btn primary" id="scanDone" data-act="scandone" disabled>Fertig und ablegen</button></div>`);
   $('#scanCam').onchange = e => scanUpload([...e.target.files]);
   $('#scanPick').onchange = e => scanUpload([...e.target.files]);
@@ -45,8 +45,8 @@ async function scanDone() {
   try {
     const s = await api('POST', `/scans/${id}/finish`, { subject: sub, title, date });
     SCANS.push(s);
-    if (asNote && sub) notesOf(sub).push({ id: uid(), date, title: s.title, body: '', scans: [id] });
-    draft = null; save(); closeModal(); render();
+    draft = null; save(); closeModal();
+    if (asNote && sub) { await newNote(sub, { title: s.title, date, text: 'Gescannt am ' + fmtDate(date) + '. Den erkannten Text fügst du oben mit „Aus Scan“ ein.' }); } else render();
     toast(sub ? `Abgelegt bei ${sub}. Der Text wird erkannt.` : 'Gespeichert. Der Text wird erkannt.');
     pollScans();
   } catch (e) { const m = $('#scanMsg'); if (m) m.textContent = e.message; }
@@ -85,8 +85,8 @@ async function searchSheet() {
     const q = qq.value.trim().toLowerCase(), box = $('#qres'); if (!box) return;
     if (q.length < 2) { box.innerHTML = '<p class="empty">Gib mindestens zwei Buchstaben ein.</p>'; return; }
     try {
-      const r = await api('GET', '/search?q=' + encodeURIComponent(q)), evs = S.events.filter(e => e.title.toLowerCase().includes(q)).slice(0, 10), cds = S.cards.filter(c => (c.front + ' ' + c.back).toLowerCase().includes(q)).slice(0, 10), fls = FILES.filter(f => f.name.toLowerCase().includes(q)).slice(0, 10);
-      box.innerHTML = (r.notes.map(n => `<div class="doc"><span class="ft">Mitschrift</span><span class="grow">${esc(n.title)} <span class="muted">${esc(n.subject)}</span></span><button class="btn sm" data-act="noteopen" data-id="${n.id}">Öffnen</button></div>`).join('') +
+      const r = await api('GET', '/search?q=' + encodeURIComponent(q)), evs = S.events.filter(e => e.title.toLowerCase().includes(q)).slice(0, 10), cds = S.cards.filter(c => (c.front + ' ' + c.back).toLowerCase().includes(q)).slice(0, 10), fls = FILES.filter(f => !/\.docx$/i.test(f.name) && f.name.toLowerCase().includes(q)).slice(0, 10);
+      box.innerHTML = ((r.docs || []).map(d => `<div class="doc"><span class="ft">${d.note ? 'Mitschrift' : 'Dokument'}</span><span class="grow">${esc(d.name.replace(/\.docx$/i, ''))} <span class="muted">${esc(d.subject)}</span>${d.snippet ? `<div class="small muted">… ${esc(d.snippet)} …</div>` : ''}</span><button class="btn sm" data-d="open" data-id="${d.id}">Öffnen</button></div>`).join('') +
         r.scans.map(s => `<div class="doc"><span class="ft">Scan</span><span class="grow">${esc(s.title)} <span class="muted">${esc(s.subject)}</span></span><button class="btn sm" data-act="scanopen" data-id="${s.id}">Öffnen</button></div>`).join('') +
         cds.map(c => `<div class="doc"><span class="ft">Karte</span><span class="grow">${esc(c.front.slice(0, 80))} <span class="muted">${esc(c.sid)}</span></span><button class="btn sm" data-act="cardedit" data-id="${c.id}">Öffnen</button></div>`).join('') +
         fls.map(f => `<div class="doc"><span class="ft">Datei</span><a class="grow" href="/api/files/${f.id}/download" target="_blank" rel="noopener">${esc(f.name)}</a></div>`).join('') +

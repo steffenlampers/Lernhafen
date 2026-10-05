@@ -74,8 +74,7 @@ document.addEventListener('click', e => {
     case 'subedit': subModal(k); break;
     case 'subopen': openSub = k; render(); window.scrollTo(0, 0); break;
     case 'subclose': openSub = ''; render(); break;
-    case 'newnote': noteModal(k, null); break;
-    case 'noteopen': { const f = noteById(id); if (f) noteModal(f.k, id); break; }
+    case 'newnote': newNote(k); break;
     case 'qnote': quickNote(b.dataset.d, pb(b.dataset.b), k); break;
     case 'scan': scanSheet(k); break;
     case 'fab': fabSheet(); break;

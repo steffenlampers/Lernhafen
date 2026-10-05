@@ -55,10 +55,22 @@ async function textEditor(f) {
     $('#qtool').innerHTML = `<span class="ql-formats"><select class="ql-header"><option value="1">Überschrift 1</option><option value="2">Überschrift 2</option><option value="3">Überschrift 3</option><option selected>Text</option></select></span>
       <span class="ql-formats"><button class="ql-bold" aria-label="Fett"></button><button class="ql-italic" aria-label="Kursiv"></button><button class="ql-underline" aria-label="Unterstrichen"></button><button class="ql-strike" aria-label="Durchgestrichen"></button></span>
       <span class="ql-formats"><button class="ql-list" value="ordered" aria-label="Nummerierung"></button><button class="ql-list" value="bullet" aria-label="Aufzählung"></button></span>
-      <span class="ql-formats"><button class="ql-link" aria-label="Link"></button><button class="ql-clean" aria-label="Formatierung entfernen"></button><button type="button" id="qtable" aria-label="Tabelle einfügen" style="width:auto;padding:0 6px">Tabelle</button></span>`;
+      <span class="ql-formats"><button class="ql-link" aria-label="Link"></button><button class="ql-clean" aria-label="Formatierung entfernen"></button><button type="button" id="qtable" aria-label="Tabelle einfügen" style="width:auto;padding:0 6px">Tabelle</button><button type="button" id="qscan" aria-label="Text aus Scan einfügen" style="width:auto;padding:0 6px">Aus Scan</button></span>`;
     const q = new Quill('#qedit', { theme: 'snow', modules: { toolbar: '#qtool', table: true }, placeholder: 'Hier schreiben …' });
     q.clipboard.dangerouslyPasteHTML(d.html || '', 'silent'); q.history.clear();
     $('#qtable').onclick = () => { try { q.getModule('table').insertTable(3, 3); } catch (e) { toast('Tabellen sind hier nicht verfügbar.'); } };
+    $('#qscan').onclick = () => {
+      const l = SCANS.filter(s => s.status === 'done' && s.ocr === 'ok' && (!f.subject || s.subject === f.subject));
+      if (!l.length) return toast('Keine gescannten Seiten mit erkanntem Text bei diesem Fach.');
+      showSheet('Text aus Scan einfügen', `<div class="stack">${l.slice().reverse().map(s => `<button class="btn" data-e="scanpick" data-id="${s.id}" style="justify-content:flex-start">${esc(s.title)} <span class="muted">${s.date ? fmtDate(s.date) : ''}</span></button>`).join('')}</div><div class="row end" style="margin-top:12px"><button class="btn ghost" data-act="fclose">Abbrechen</button></div>`);
+      $('#sbody').onclick = async e => {
+        const b = e.target.closest('[data-e=scanpick]'); if (!b) return;
+        try {
+          const txt = (await (await fetch(`/api/scans/${b.dataset.id}/file/doc.txt`)).text()).trim(), at = q.getSelection() ? q.getSelection().index : q.getLength() - 1;
+          q.insertText(at, '\n' + txt + '\n', 'user'); closeModal(); toast('Text eingefügt');
+        } catch (er) { toast('Text konnte nicht geladen werden.'); }
+      };
+    };
     ED = { id: f.id, kind: 'doc', dirty: false, save: async () => { await api('PUT', '/editor/doc/' + f.id, { html: q.getSemanticHTML() }); } };
     q.on('text-change', (_d, _o, src) => { if (src === 'user') edDirty(); });
     edStatus('Gespeichert'); q.focus();
@@ -154,3 +166,4 @@ function viewFile(f) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#editor') && !$('#editor').hidden && !(document.activeElement && document.activeElement.dataset && document.activeElement.dataset.r != null)) closeEditor(); });
 window.addEventListener('beforeunload', e => { if (ED && ED.dirty) { e.preventDefault(); e.returnValue = ''; } });
 document.addEventListener('visibilitychange', () => { if (document.hidden && ED && ED.dirty) edSave(); });
+document.addEventListener('click', e => { if (e.target.id === 'etitle') renameOpen(); });
