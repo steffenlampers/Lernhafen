@@ -22,7 +22,16 @@ const REDIRECT = 'http://127.0.0.1:53682/';
 const S = 'https://www.googleapis.com/auth/';
 const FOLDER = 'application/vnd.google-apps.folder', DOC = 'application/vnd.google-apps.document';
 
-const envId = () => (process.env.GOOGLE_CLIENT_ID || '').trim(), envSecret = () => (process.env.GOOGLE_CLIENT_SECRET || '').trim();
+const fs = require('fs');
+const path = require('path');
+/** Zentrale Google-App von Lernhafen: aus der Umgebung oder aus einer beim Bauen des Images eingefügten Datei. Dann müssen Nutzer nichts einrichten. */
+function central() {
+  let id = (process.env.GOOGLE_CLIENT_ID || '').trim(), secret = (process.env.GOOGLE_CLIENT_SECRET || '').trim();
+  if (!(id && secret)) { try { const f = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'google-client.json'), 'utf8')); id = String(f.clientId || '').trim(); secret = String(f.clientSecret || '').trim(); } catch (e) { /* keine eingebackene Datei */ } }
+  return id && secret ? { id, secret } : null;
+}
+const envId = () => (central() || {}).id || '', envSecret = () => (central() || {}).secret || '';
+const REDIRECT_CENTRAL = () => process.env.GOOGLE_REDIRECT_URI || 'https://steffenlampers.github.io/Lernhafen/google-callback.html';
 const cfg = () => {
   const c = store.read('google', {}) || {};
   if (envId() && envSecret()) { c.clientId = envId(); c.clientSecret = envSecret(); }     // zentral hinterlegt: die Nutzer brauchen nichts einzutragen
@@ -44,11 +53,11 @@ function scopesFor(a) {
 function status() {
   const c = cfg();
   return { preconfigured: !!(envId() && envSecret()), autoUpload: !!c.autoUpload, configured: !!(c.clientId && c.clientSecret), connected: !!(c.tokens && c.tokens.refresh), email: c.email || '', access: c.access || { drive: 'full', calendar: true, gmail: false }, clientId: c.clientId || '',
-    push: c.push || { enabled: false }, pull: c.pull || [], gmailQuery: c.gmailQuery || 'is:unread category:primary', error: c.error || '', redirect: REDIRECT };
+    mode: central() ? 'central' : 'own', push: c.push || { enabled: false }, pull: c.pull || [], gmailQuery: c.gmailQuery || 'is:unread category:primary', error: c.error || '', redirect: REDIRECT };
 }
 
 /** Schritt 1: Zugangsdaten speichern und den Anmelde-Link bauen. */
-function begin({ clientId, clientSecret, access }) {
+function begin({ clientId, clientSecret, access, origin }) {
   if (envId() && envSecret()) { clientId = envId(); clientSecret = envSecret(); }
   clientId = String(clientId || '').trim(); clientSecret = String(clientSecret || '').trim();
   if (!/^[\w.-]+\.apps\.googleusercontent\.com$/.test(clientId)) throw new Error('Die Client-ID sieht nicht richtig aus. Sie endet auf .apps.googleusercontent.com.');
@@ -56,10 +65,16 @@ function begin({ clientId, clientSecret, access }) {
   if (!clientSecret && old.clientId === clientId) clientSecret = old.clientSecret;
   if (!clientSecret) throw new Error('Bitte das Client-Secret eintragen.');
   const a = { drive: access && access.drive === 'file' ? 'file' : 'full', calendar: !!(access && access.calendar), gmail: !!(access && access.gmail) };
-  const state = b64u(crypto.randomBytes(16)), verifier = b64u(crypto.randomBytes(48));
-  const c = Object.assign({}, old, { clientId, clientSecret, access: a, pending: { state, verifier, at: Date.now() }, error: '' });
+  const state = b64u(crypto.randomBytes(16)), verifier = b64u(crypto.randomBytes(48)), mode = central() ? 'central' : 'own';
+  let redirect = REDIRECT, stateParam = state;
+  if (mode === 'central') {                  // Rücksprung über die Weiterleitungsseite, die den Code an dieses Gerät zurückgibt
+    let o; try { o = new URL(String(origin || '')); } catch (e) { throw new Error('Die Adresse dieser App ist unbekannt. Öffne die App im Browser und versuche es noch einmal.'); }
+    if (!/^https?:$/.test(o.protocol)) throw new Error('Ungültige Adresse.');
+    redirect = REDIRECT_CENTRAL(); stateParam = b64u(Buffer.from(JSON.stringify({ o: o.origin, s: state })));
+  }
+  const c = Object.assign({}, old, { clientId, clientSecret, access: a, pending: { state, verifier, at: Date.now(), redirect, mode }, error: '' });
   save(c);
-  const p = new URLSearchParams({ client_id: clientId, redirect_uri: REDIRECT, response_type: 'code', scope: scopesFor(a).join(' '), access_type: 'offline', prompt: 'consent', state, code_challenge: b64u(crypto.createHash('sha256').update(verifier).digest()), code_challenge_method: 'S256' });
+  const p = new URLSearchParams({ client_id: clientId, redirect_uri: redirect, response_type: 'code', scope: scopesFor(a).join(' '), access_type: 'offline', prompt: 'consent', state: stateParam, code_challenge: b64u(crypto.createHash('sha256').update(verifier).digest()), code_challenge_method: 'S256' });
   return { url: AUTH_URL + '?' + p };
 }
 
@@ -85,13 +100,23 @@ async function finish(input) {
   }
   if (!code) throw new Error('In der Adresse fehlt der Code. Kopiere die komplette Adresse aus der Adresszeile.');
   let t;
-  try { t = await tokenCall({ grant_type: 'authorization_code', code, redirect_uri: REDIRECT, code_verifier: c.pending.verifier }); }
+  try { t = await tokenCall({ grant_type: 'authorization_code', code, redirect_uri: c.pending.redirect || REDIRECT, code_verifier: c.pending.verifier }); }
   catch (e) { throw new Error('Google hat den Code nicht angenommen: ' + e.message); }
   if (!t.refresh_token) throw new Error('Google hat keinen dauerhaften Zugang geliefert. Entferne unter myaccount.google.com/permissions den Zugriff dieser App und verbinde neu.');
   const next = Object.assign({}, c, { tokens: { refresh: t.refresh_token, access: t.access_token, expiry: Date.now() + (t.expires_in || 3600) * 1000 }, grantedScope: t.scope || '', connectedAt: new Date().toISOString(), error: '' });
   delete next.pending; save(next);
   try { const u = await (await fetch(URLS.userinfo(), { headers: { Authorization: 'Bearer ' + t.access_token } })).json(); next.email = u.email || ''; save(next); } catch (e) { /* E-Mail ist nur Anzeige */ }
   return status();
+}
+
+/** Rückruf der Weiterleitungsseite: Code und Status prüfen, dann wie beim manuellen Weg verbinden. */
+async function callback(code, stateParam, error) {
+  if (error) throw new Error('Google hat die Anmeldung abgelehnt: ' + error);
+  let s = '';
+  try { s = JSON.parse(Buffer.from(String(stateParam || ''), 'base64url').toString()).s; } catch (e) { /* unten abgelehnt */ }
+  const c = cfg();
+  if (!c.pending || !s || s !== c.pending.state) throw new Error('Diese Anmeldung gehört zu keiner offenen Verbindung. Starte sie noch einmal in der App.');
+  return finish(`${c.pending.redirect}?code=${encodeURIComponent(code || '')}&state=${encodeURIComponent(c.pending.state)}`);
 }
 
 async function disconnect() {
@@ -297,4 +322,4 @@ async function gmailInbox(q) {
   return { query, total: list.resultSizeEstimate || messages.length, messages };
 }
 
-module.exports = { status, begin, finish, disconnect, driveList, driveMeta, driveText, driveUpload, folderCreate, docCreate, docAppend, docTail, ensureFolder, setAutoUpload, calendarList, calendarEvents, setPull, setPush, setPushResult, pushEvents, gmailInbox, scopesFor, REDIRECT };
+module.exports = { status, begin, finish, callback, disconnect, driveList, driveMeta, driveText, driveUpload, folderCreate, docCreate, docAppend, docTail, ensureFolder, setAutoUpload, calendarList, calendarEvents, setPull, setPush, setPushResult, pushEvents, gmailInbox, scopesFor, REDIRECT };

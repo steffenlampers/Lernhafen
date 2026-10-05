@@ -16,6 +16,8 @@ services:
       PROFILE: ${PROFILE:-allgemein}
       SYNC_HOUR: ${SYNC_HOUR:-6}
       OCR_LANG: ${OCR_LANG:-deu+eng}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
     volumes:
       - ./data:/data
     security_opt:

@@ -42,6 +42,13 @@ app.get('/feed/:token/termine.ics', (req, res) => {
   res.send(feed.build(st, profile, (st.settings && st.settings.appName) || config.appName));
 });
 
+/* Rückruf von Google über die Weiterleitungsseite. Ohne Anmeldung erreichbar, weil nur der geheime Status der offenen Verbindung zählt. */
+app.get('/api/google/callback', async (req, res) => {
+  const page = (ok, msg) => res.status(ok ? 200 : 400).type('html').send(`<!doctype html><html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Google</title>${ok ? '<meta http-equiv="refresh" content="1;url=/?google=ok">' : ''}<body style="font:16px system-ui;max-width:30em;margin:3em auto;padding:0 1em"><h2>${ok ? 'Mit Google verbunden' : 'Das hat nicht geklappt'}</h2><p>${String(msg).replace(/[<>&]/g, '')}</p><p><a href="/${ok ? '?google=ok' : ''}">Zurück zur App</a></p></body></html>`);
+  try { await google.callback(req.query.code, req.query.state, req.query.error); page(true, 'Du wirst gleich zurückgeleitet.'); }
+  catch (e) { page(false, e.message); }
+});
+
 app.use('/api', auth.guard);
 
 app.get('/api/config', wrap(async (req, res) => {
@@ -139,7 +146,7 @@ const mimeOf = n => ({ '.pdf': 'application/pdf', '.png': 'image/png', '.jpg': '
 app.get('/api/google/status', (req, res) => res.json(google.status()));
 app.post('/api/google/begin', wrap(async (req, res) => {
   if (!auth.enabled()) throw new Error('Setze zuerst ein Passwort für die App (APP_PASSWORD). Sonst könnte jeder im Netzwerk auf dein Google-Konto zugreifen.');
-  res.json(google.begin(req.body || {}));
+  res.json(google.begin(Object.assign({}, req.body || {}, { origin: (req.body || {}).origin })));
 }));
 app.post('/api/google/finish', wrap(async (req, res) => res.json(await google.finish((req.body || {}).input))));
 app.delete('/api/google', wrap(async (req, res) => res.json(await google.disconnect())));
@@ -148,6 +155,7 @@ app.get('/api/google/drive/text/:id', wrap(async (req, res) => res.json(await go
 app.post('/api/google/drive/folder', wrap(async (req, res) => res.json(await google.folderCreate((req.body || {}).name || 'Neuer Ordner', (req.body || {}).parent))));
 app.post('/api/google/drive/upload', wrap(async (req, res) => {
   const b = req.body || {}, out = [];
+  if (!b.folderId && b.subject) b.folderId = await google.ensureFolder(['Lernhafen', String(b.subject).slice(0, 60)]);
   if (b.kind === 'scan') {
     const s = scans.find(b.id); if (!s || s.status !== 'done') throw new Error('Der Scan ist noch nicht fertig.');
     const pdf = scans.filePath(s.id, 'doc.pdf');

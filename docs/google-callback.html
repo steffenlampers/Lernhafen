@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Mit Google anmelden</title>
+<style>
+  :root{color-scheme:light dark}
+  body{font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;max-width:32rem;margin:15vh auto;padding:0 1rem;background:#EEF3F3;color:#12282B}
+  @media (prefers-color-scheme:dark){body{background:#0E1A1C;color:#E6F0EF}}
+  h1{font-size:1.4rem}.box{word-break:break-all;font:13px ui-monospace,monospace;padding:.6rem;border:1px solid #888;border-radius:8px}
+</style>
+</head>
+<body>
+<h1 id="t">Einen Moment …</h1>
+<p id="m">Du wirst zu deiner Lernhafen-App zurückgeleitet.</p>
+<p id="x" class="box" hidden></p>
+<script>
+/* Diese Seite ist nur eine Weiche: Google schickt den Anmelde-Code hierher, und die Seite gibt ihn an die App im Heimnetz weiter.
+   Sie speichert nichts, sendet nichts an einen Server und leitet nur zu Adressen im privaten Netz weiter. */
+(function () {
+  var q = new URLSearchParams(location.search), code = q.get('code') || '', state = q.get('state') || '', err = q.get('error') || '';
+  function show(t, m, x) { document.getElementById('t').textContent = t; document.getElementById('m').textContent = m; if (x) { var e = document.getElementById('x'); e.hidden = false; e.textContent = x; } }
+  function dec(s) { try { return JSON.parse(atob(s.replace(/-/g, '+').replace(/_/g, '/'))); } catch (e) { return null; } }
+  function priv(h) {
+    h = h.toLowerCase();
+    if (h === 'localhost' || h === '[::1]' || /^\[(fd|fe80)/.test(h)) return true;
+    var m = /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(h);
+    if (m) { var a = +m[1], b = +m[2]; return a === 10 || a === 127 || (a === 192 && b === 168) || (a === 172 && b >= 16 && b <= 31) || (a === 100 && b >= 64 && b <= 127) || (a === 169 && b === 254); }
+    return h.indexOf('.') < 0 || /\.(local|lan|home|internal|home\.arpa|fritz\.box|ts\.net)$/.test(h);
+  }
+  var st = dec(state), o = null;
+  try { o = st && st.o ? new URL(st.o) : null; } catch (e) { o = null; }
+  if (!o || !/^https?:$/.test(o.protocol)) return show('Das hat nicht geklappt', 'Diese Seite wurde nicht von deiner Lernhafen-App aufgerufen. Starte die Anmeldung in der App noch einmal.');
+  if (!priv(o.hostname)) return show('Nicht erlaubt', 'Aus Sicherheitsgründen leite ich nur zu Adressen im Heimnetz weiter, nicht zu ' + o.hostname + '.');
+  var p = new URLSearchParams(); if (code) p.set('code', code); if (err) p.set('error', err); p.set('state', state);
+  var target = o.origin + '/api/google/callback?' + p;
+  show('Weiter zur App …', 'Falls nichts passiert, öffne diese Adresse im selben Browser:', target);
+  location.replace(target);
+})();
+</script>
+</body>
+</html>

@@ -19,6 +19,7 @@ Der Name der App ist einstellbar (`APP_NAME` oder im Einrichtungs-Assistenten), 
 | **Suche** | Findet Begriffe in Mitschriften, im erkannten Text von Scans, in Karten, Dateien und Terminen. |
 | **Fokus-Timer** | 10/2, 25/5 und 50/10 Minuten, mit Tageszähler. |
 | **Zentrale für alles** | Lernlinks je Profil (KI-Helfer, Fachportale) plus eigene Links, z. B. Hermes Agent oder die Lernplattform deiner Schule. |
+| **Google** | Mit einem Klick bei Google anmelden: Mitschriften als **Google Docs** (Ordner „Lernhafen / Fach“ legt die App selbst an), Scans automatisch in **Drive** sichern, **Google Kalender** anzeigen und Termine mit Erinnerungen dorthin schreiben, ungelesene **Gmail**-Nachrichten anzeigen, Suche auch in Drive. |
 | **Sicherung** | Alle Daten als eine Datei herunterladen und wieder einspielen. |
 
 ## Profile
@@ -91,6 +92,25 @@ Das Skript lädt das neue Image, startet den Container neu und räumt alte Image
 
 Hast du Lernhafen über die Container Station per YAML angelegt, geht das Update dort ebenfalls über „Anwendungen“, indem du die Anwendung neu erstellen lässt (das Image wird dabei neu geladen). Mit der Compose-Datei auf dem NAS und `update.sh` bist du unabhängig davon.
 
+## Google verbinden
+
+**Für Nutzer:** „Mehr → Verbindungen → Google → Anmelden“, mit dem normalen Google-Konto anmelden und den Zugriff erlauben. Mehr ist nicht nötig. Danach legt die App die Mitschrift-Dokumente und Ordner selbst an. Schalter gibt es nur drei: Scans automatisch in Drive sichern, Termine in Google Kalender schreiben, Google-Kalender anzeigen. Google zeigt beim ersten Mal „Nicht bestätigte App“. Das ist normal, weil die App nicht von Google geprüft ist: auf „Erweitert“ und „Weiter“ klicken.
+
+**Voraussetzung:** Die App braucht dafür eine Google-App-Registrierung (Client-ID und -Schlüssel). Sie wird **einmal vom Betreiber des Images** angelegt, nicht von jedem Nutzer:
+
+1. In der [Google Cloud Console](https://console.cloud.google.com/) ein Projekt anlegen und die Dienste **Drive, Docs, Kalender** und **Gmail** aktivieren.
+2. Unter „Google Auth Platform“ die Zielgruppe **Extern** wählen und die App **veröffentlichen** („In Produktion“). Sonst läuft die Verbindung nach 7 Tagen ab.
+3. Unter „Clients“ einen Client vom Typ **Webanwendung** erstellen. Als „Autorisierte Weiterleitungs-URI“ eintragen: `https://steffenlampers.github.io/Lernhafen/google-callback.html` (bei einem Fork die eigene GitHub-Pages-Adresse, dann auch `GOOGLE_REDIRECT_URI` setzen).
+4. Client-ID und -Schlüssel in den GitHub-Einstellungen des Repos unter *Secrets and variables → Actions* als `GOOGLE_CLIENT_ID` und `GOOGLE_CLIENT_SECRET` speichern und den Bau neu starten. Das Image enthält sie dann. Alternativ setzt jede Installation sie in der `.env`.
+5. In den Repo-Einstellungen unter *Pages* die Quelle „Branch main, Ordner /docs“ wählen. Die Seite `google-callback.html` leitet den Anmelde-Code an die App im Heimnetz weiter. Sie speichert nichts und leitet nur zu Adressen im privaten Netz weiter (Heimnetz, `.local`, Tailscale).
+
+**Gut zu wissen:**
+- Ohne `APP_PASSWORD` lässt sich Google nicht verbinden, damit nicht jeder im Netz auf dein Konto kommt.
+- Eine nicht geprüfte Google-App darf bis zu **100 Nutzer** haben. Für mehr braucht Google eine Prüfung („Verifizierung“), für Drive und Gmail mit Sicherheitsgutachten.
+- Der Schlüssel im öffentlichen Image lässt sich auslesen. Damit kann jemand die Anmeldeseite unter dem Namen der App anzeigen, aber nicht auf Konten zugreifen, denn die Zugangs-Tokens liegen nur bei den Nutzern (`data/google.json`, Rechte 600).
+- **Eigene Google-App statt der zentralen:** Enthält das Image keine Zugangsdaten, führt die App Schritt für Schritt durch das Anlegen (Client-Typ „Desktop-App“). Danach kopiert man einmal die Adresse aus dem Browser in die App.
+- Verbindung trennen: in der App unter „Google → Trennen“. Dabei wird der Zugriff bei Google widerrufen.
+
 ## Stundenplan verbinden
 
 - **Schulmanager:** Im Tab „Woche“ auf „Verbinden“, E-Mail oder Benutzername und Passwort eintragen. Der Server holt den Plan jeden Morgen (`SYNC_HOUR`, Standard 6 Uhr) und holt einen verpassten Abgleich nach. Die Zugangsdaten liegen nur in `data/schulmanager.json` (Rechte 600). Die Schnittstelle ist nicht offiziell und kann sich ändern. Dann zeigt die App eine Meldung, und das Lesezeichen-Verfahren bleibt als Ersatz.
@@ -127,10 +147,10 @@ Unter „Mehr → Daten und Verbindungen → Termine im Handy-Kalender“ findes
 
 ## Stand: was getestet ist und was nicht
 
-- **Automatisch getestet (28 Tests):** Plan-Umwandlung, Schulmanager-Passwort-Hash, iCal (Wiederholungen, Ausnahmen, Verlegung, Zeitzonen, mehrtägig), Kalender-Abruf mit Fehlern, Handy-Abo (Inhalt, Erinnerungen, Falten, Link erneuern), Dateien (Typen, Pfadtricks), Scans, Suche, Sicherung, Anmeldung und Sperre, alle Profile.
+- **Automatisch getestet (44 Tests):** Plan-Umwandlung, Schulmanager-Passwort-Hash, iCal (Wiederholungen, Ausnahmen, Verlegung, Zeitzonen, mehrtägig), Kalender-Abruf mit Fehlern, Handy-Abo (Inhalt, Erinnerungen, Falten, Link erneuern), Dateien (Typen, Pfadtricks), Scans, Suche, Sicherung, Anmeldung und Sperre, alle Profile.
 - **Im echten Browser durchgespielt (Handy- und Desktop-Breite, hell und dunkel):** Einrichtungs-Assistent, Kalender-Link, Heute mit Uhrzeiten, Mitschrift zur Stunde, Termin mit Schritten, Lernplan, Karteikarten-Runde, Noten, Datei- und Scan-Upload, Wochenplan von Hand, Handy-Abo, Suche.
-- **Nicht getestet:** Die eigene IP per macvlan auf einem echten NAS (die Konfiguration ist geprüft, der Start mit Port 80 ohne Root läuft im GitHub-Test), der Live-Abruf bei Schulmanager mit echten Zugangsdaten, die Texterkennung mit Tesseract im fertigen Image (der GitHub-Lauf prüft, dass Deutsch und die PDF-Schrift vorhanden sind), der Betrieb auf einem echten NAS und die Kalender-Abos auf iPhone und Android.
-- **Noch nicht enthalten:** Google-Anbindung (Docs, Drive, Gmail), Seitenzuschnitt und Kantenerkennung per Hand, Handschrifterkennung, mehrere Nutzer, englische Oberfläche.
+- **Nicht getestet:** Die Anmeldung und alle Aufrufe mit **echtem Google** (getestet mit einem nachgebauten Google-Server, im Browser und automatisch: Anmelden mit Rückruf, Token-Erneuerung, Drive, Docs, Kalender lesen und schreiben, Gmail, Scans in Drive sichern; ob Google die Weiterleitungsseite auf github.io bei deiner App akzeptiert, zeigt erst der erste Versuch), die eigene IP per macvlan auf einem echten NAS (die Konfiguration ist geprüft, der Start mit Port 80 ohne Root läuft im GitHub-Test), der Live-Abruf bei Schulmanager mit echten Zugangsdaten, die Texterkennung mit Tesseract im fertigen Image (der GitHub-Lauf prüft, dass Deutsch und die PDF-Schrift vorhanden sind), der Betrieb auf einem echten NAS und die Kalender-Abos auf iPhone und Android.
+- **Noch nicht enthalten:** Seitenzuschnitt und Kantenerkennung per Hand, Handschrifterkennung, mehrere Nutzer, englische Oberfläche.
 
 ## Entwicklung
 

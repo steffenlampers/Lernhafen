@@ -13,11 +13,8 @@ process.env.APP_PASSWORD = 'geheim-passwort';
 const app = require('../src/server');
 const sharp = require('sharp');
 
-/* ---- Mini-Google zum Testen: so antwortet Google (vereinfacht) ---- */
-const G = { folders: {}, log: [], failNextAuth: false, refreshInvalid: false, tokens: 0, events: {}, gcalEvents: {}, nextId: 1 };
+const { G, create, setUrl } = require('./mock-google');
 let mock, mockUrl, server, base, cookie;
-const body = req => new Promise(r => { const c = []; req.on('data', d => c.push(d)); req.on('end', () => r(Buffer.concat(c))); });
-const send = (res, code, obj, headers = {}) => { res.writeHead(code, Object.assign({ 'Content-Type': 'application/json' }, headers)); res.end(typeof obj === 'string' ? obj : JSON.stringify(obj)); };
 
 test.before(async () => {
   mock = http.createServer(async (req, res) => {
@@ -66,7 +63,8 @@ test.before(async () => {
     if (p === '/gmail/v1/users/me/messages/m1') return send(res, 200, { payload: { headers: [{ name: 'From', value: '"Frau Müller" <mueller@schule.de>' }, { name: 'Subject', value: 'Raumänderung' }, { name: 'Date', value: 'Mon, 5 Oct 2026 08:00:00 +0200' }] } });
     send(res, 404, { error: { message: 'unbekannt ' + p } });
   });
-  await new Promise(r => mock.listen(0, r)); mockUrl = 'http://127.0.0.1:' + mock.address().port; process.env.GOOGLE_ORIGIN = mockUrl;
+  mock = create();
+  await new Promise(r => mock.listen(0, r)); mockUrl = 'http://127.0.0.1:' + mock.address().port; setUrl(mockUrl); process.env.GOOGLE_ORIGIN = mockUrl;
   await new Promise(r => { server = app.listen(0, r); }); base = 'http://127.0.0.1:' + server.address().port;
   const l = await fetch(base + '/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: 'geheim-passwort' }) });
   cookie = l.headers.get('set-cookie').split(';')[0];
@@ -260,14 +258,33 @@ test('Trennen widerruft den Zugang und löscht die gespeicherten Daten', async (
   assert.ok(!fs.existsSync(path.join(process.env.DATA_DIR, 'google.json')));
 });
 
-test('Zentral hinterlegte Google-Zugangsdaten: Nutzer müssen nichts eintragen und das Secret liegt nicht in der Datei', async () => {
+test('Einfacher Weg: zentrale Google-App, Rücksprung über die Weiterleitungsseite, ohne Kopieren und ohne Anmeldung am Rückruf', async () => {
   process.env.GOOGLE_CLIENT_ID = '999-zentral.apps.googleusercontent.com'; process.env.GOOGLE_CLIENT_SECRET = 'GOCSPX-zentral';
   try {
-    assert.strictEqual((await j('GET', '/api/google/status')).body.preconfigured, true);
-    const r = await j('POST', '/api/google/begin', { access: { drive: 'full', calendar: false, gmail: false } });
+    const st = (await j('GET', '/api/google/status')).body;
+    assert.strictEqual(st.mode, 'central'); assert.strictEqual(st.configured, true);
+    assert.strictEqual((await j('POST', '/api/google/begin', { access: { drive: 'full' } })).status, 400);           // ohne Adresse der App
+    const r = await j('POST', '/api/google/begin', { origin: 'http://192.168.1.50:8091', access: { drive: 'full', calendar: true, gmail: false } });
     assert.strictEqual(r.status, 200);
-    assert.strictEqual(new URL(r.body.url).searchParams.get('client_id'), '999-zentral.apps.googleusercontent.com');
+    const u = new URL(r.body.url);
+    assert.strictEqual(u.searchParams.get('client_id'), '999-zentral.apps.googleusercontent.com');
+    assert.strictEqual(u.searchParams.get('redirect_uri'), 'https://steffenlampers.github.io/Lernhafen/google-callback.html');
+    const state = u.searchParams.get('state'), decoded = JSON.parse(Buffer.from(state, 'base64url').toString());
+    assert.strictEqual(decoded.o, 'http://192.168.1.50:8091'); assert.ok(decoded.s.length > 10);
     const disk = fs.readFileSync(path.join(process.env.DATA_DIR, 'google.json'), 'utf8');
-    assert.ok(!disk.includes('GOCSPX-zentral') && !disk.includes('999-zentral'));
+    assert.ok(!disk.includes('GOCSPX-zentral') && !disk.includes('999-zentral'));        // Zugangsdaten der App landen nicht in den Nutzerdaten
+    // Rückruf: ohne Cookie, aber mit passendem Status
+    const bad = await fetch(base + '/api/google/callback?code=gute-code&state=' + encodeURIComponent(Buffer.from(JSON.stringify({ o: 'http://x', s: 'falsch' })).toString('base64url')));
+    assert.strictEqual(bad.status, 400);
+    const fremd = await fetch(base + '/api/google/callback?code=gute-code&state=zufall');
+    assert.strictEqual(fremd.status, 400);
+    const ok = await fetch(base + '/api/google/callback?code=gute-code&state=' + encodeURIComponent(state));
+    assert.strictEqual(ok.status, 200); assert.match(await ok.text(), /Mit Google verbunden/);
+    assert.strictEqual(G.redirect, 'https://steffenlampers.github.io/Lernhafen/google-callback.html');   // Google bekommt dieselbe Adresse beim Tausch
+    assert.strictEqual((await j('GET', '/api/google/status')).body.connected, true);
+    const again = await fetch(base + '/api/google/callback?code=gute-code&state=' + encodeURIComponent(state));
+    assert.strictEqual(again.status, 400);                                                  // der Status gilt nur einmal
+    const abgelehnt = await fetch(base + '/api/google/callback?error=access_denied&state=' + encodeURIComponent(state));
+    assert.strictEqual(abgelehnt.status, 400);
   } finally { delete process.env.GOOGLE_CLIENT_ID; delete process.env.GOOGLE_CLIENT_SECRET; }
 });

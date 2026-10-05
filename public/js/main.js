@@ -131,6 +131,7 @@ async function loadAll() {
   try { SM = await api('GET', '/schulmanager'); } catch (e) { /* ok */ }
   try { CAL = await api('GET', '/calendars'); } catch (e) { /* ok */ }
   try { FILES = (await api('GET', '/files')).files; } catch (e) { /* ok */ }
+  await loadGoogle();
   await loadScans();
 }
 async function boot() {
@@ -143,7 +144,8 @@ async function boot() {
     if (S.settings.profile && S.settings.blocksFor !== P.id) { S.settings.blocks = P.blocks; S.settings.blocksFor = P.id; save(); }
     await loadAll();
     syncEffectiveDates(); render(); pollScans();
-    if (!S.settings.profile) setupSheet();
+    if (/[?&]google=ok/.test(location.search)) { history.replaceState(null, '', location.pathname); toast('Mit Google verbunden'); if (gOn()) googleManage(); }
+    else if (!S.settings.profile) setupSheet();
     else if (S.settings.after) { const a = S.settings.after; S.settings.after = ''; save(); if (a === 'plansrc') plansrcSheet(); }
     setInterval(async () => {   // Änderungen von anderen Geräten übernehmen, solange hier nichts offen ist
       if (dirty || !$('#modal').hidden || document.hidden) return;

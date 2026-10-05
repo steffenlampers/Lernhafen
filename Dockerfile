@@ -21,6 +21,10 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY src ./src
 COPY profiles ./profiles
 COPY public ./public
+# Optional: Zugangsdaten der zentralen Google-App (aus GitHub-Secrets beim Bauen). Wer das Image nutzt, meldet sich dann nur noch bei Google an.
+ARG GOOGLE_CLIENT_ID=""
+ARG GOOGLE_CLIENT_SECRET=""
+RUN if [ -n "$GOOGLE_CLIENT_ID" ] && [ -n "$GOOGLE_CLIENT_SECRET" ]; then printf '{"clientId":"%s","clientSecret":"%s"}' "$GOOGLE_CLIENT_ID" "$GOOGLE_CLIENT_SECRET" > /app/google-client.json; fi
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh && mkdir -p /data && chown -R node:node /data /app
 
