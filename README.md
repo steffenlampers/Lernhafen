@@ -75,6 +75,22 @@ Wenn macvlan bei dir nicht geht (manche Netzwerkkarten oder virtuelle Switches b
 
 Im Browser des Handys „Zum Startbildschirm hinzufügen“ wählen, dann startet die App wie eine normale App.
 
+## Update per SSH
+
+Ein Update tauscht nur das Image. Termine, Mitschriften, Scans und Einstellungen liegen im Ordner `data` und bleiben erhalten.
+
+Am einfachsten geht es, wenn die Compose-Datei auf dem NAS liegt, zum Beispiel in `/share/Container/lernhafen/` (dort auch `data/` und `.env`). Dann reicht per SSH:
+
+```
+cd /share/Container/lernhafen
+sh update.sh                                   # normale Installation
+sh update.sh docker-compose.eigene-ip.yml      # Variante mit eigener IP
+```
+
+Das Skript lädt das neue Image, startet den Container neu und räumt alte Images auf. Von Hand sind es zwei Befehle: `docker compose pull` und `docker compose up -d`. Ob es geklappt hat, siehst du in der App unter „Mehr → Daten und Verbindungen“ an der Versionsnummer.
+
+Hast du Lernhafen über die Container Station per YAML angelegt, geht das Update dort ebenfalls über „Anwendungen“, indem du die Anwendung neu erstellen lässt (das Image wird dabei neu geladen). Mit der Compose-Datei auf dem NAS und `update.sh` bist du unabhängig davon.
+
 ## Stundenplan verbinden
 
 - **Schulmanager:** Im Tab „Woche“ auf „Verbinden“, E-Mail oder Benutzername und Passwort eintragen. Der Server holt den Plan jeden Morgen (`SYNC_HOUR`, Standard 6 Uhr) und holt einen verpassten Abgleich nach. Die Zugangsdaten liegen nur in `data/schulmanager.json` (Rechte 600). Die Schnittstelle ist nicht offiziell und kann sich ändern. Dann zeigt die App eine Meldung, und das Lesezeichen-Verfahren bleibt als Ersatz.
@@ -96,7 +112,7 @@ Unter „Mehr → Daten und Verbindungen → Termine im Handy-Kalender“ findes
 ## Betrieb
 
 - **Backup:** Den Ordner `data/` kopieren (alles drin) oder in der App „Sicherung herunterladen“ (ohne Scans und Dateien).
-- **Update:** In Container Station den Container neu erstellen oder `docker compose pull && docker compose up -d`. Die Daten bleiben erhalten.
+- **Update:** siehe „Update per SSH“. Die Daten bleiben erhalten.
 - **Passwort ändern:** `APP_PASSWORD` ändern und den Container neu starten.
 - **Von außen erreichbar:** Nicht ohne HTTPS und Passwort ins Internet stellen. Besser per VPN (WireGuard, Tailscale oder der QNAP-VPN-Dienst).
 
