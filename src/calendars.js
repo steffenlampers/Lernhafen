@@ -3,12 +3,15 @@
 const crypto = require('crypto');
 const store = require('./store');
 const ical = require('./ical');
+const google = require('./google');
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const shift = n => { const d = new Date(); d.setDate(d.getDate() + n); return iso(d); };
 
 const list = () => store.read('calendars', []);
+const gpulls = () => { const st = google.status(); return st.connected ? st.pull.map(p => ({ id: 'g' + Buffer.from(p.id).toString('hex').slice(0, 30), calId: p.id, name: p.name + ' (Google)', kind: p.kind, google: true })) : []; };
+const all = () => list().concat(gpulls());
 
 function validate(input) {
   if (!Array.isArray(input) || input.length > 10) throw new Error('Höchstens 10 Kalender sind möglich.');
@@ -20,7 +23,7 @@ function validate(input) {
 }
 function save(input) {
   const next = validate(input), cache = store.read('ical_cache', {});
-  for (const id of Object.keys(cache)) if (!next.some(c => c.id === id)) delete cache[id];
+  for (const id of Object.keys(cache)) if (!next.some(c => c.id === id) && !gpulls().some(c => c.id === id)) delete cache[id];
   store.write('calendars', next); store.write('ical_cache', cache);
   return next;
 }
@@ -42,10 +45,10 @@ function sync() {
   if (running) return running;
   running = (async () => {
     const cache = store.read('ical_cache', {}), from = shift(-14), to = shift(200);
-    for (const c of list()) {
+    for (const c of all()) {
       const old = cache[c.id] || {};
       try {
-        const events = ical.expand(await fetchText(c.url), from, to);
+        const events = c.google ? await google.calendarEvents(c.calId, from, to) : ical.expand(await fetchText(c.url), from, to);
         cache[c.id] = { updated: Date.now(), ok: true, msg: events.length + ' Einträge gelesen.', events };
       } catch (e) {
         cache[c.id] = { updated: old.updated || 0, tried: Date.now(), ok: false, msg: String(e.message || e).slice(0, 200), events: old.events || [] };
@@ -59,7 +62,7 @@ function sync() {
 
 function events() {
   const cache = store.read('ical_cache', {}), items = [], status = [];
-  for (const c of list()) {
+  for (const c of all()) {
     const e = cache[c.id] || { ok: null, msg: 'Noch nicht abgerufen.', events: [] };
     status.push({ id: c.id, name: c.name, kind: c.kind, ok: e.ok, msg: e.msg, updated: e.updated || 0 });
     for (const ev of e.events || []) items.push(Object.assign({ cal: c.id, kind: c.kind, calName: c.name }, ev));
@@ -70,7 +73,7 @@ function events() {
 /** Beim Scheduler: veraltet, wenn der letzte erfolgreiche Abruf mehr als 20 Stunden zurückliegt. */
 function stale() {
   const cache = store.read('ical_cache', {});
-  return list().some(c => !cache[c.id] || Date.now() - (cache[c.id].tried || cache[c.id].updated || 0) > 20 * 36e5);
+  return all().some(c => !cache[c.id] || Date.now() - (cache[c.id].tried || cache[c.id].updated || 0) > 20 * 36e5);
 }
 
-module.exports = { list, save, sync, events, stale, validate };
+module.exports = { list, all, save, sync, events, stale, validate };

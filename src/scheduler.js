@@ -7,7 +7,7 @@ const calendars = require('./calendars');
 function tick(log) {
   const now = new Date();
   if (now.getHours() < config.syncHour) return;
-  if (calendars.list().length && calendars.stale()) calendars.sync().then(() => log('Kalender abgeglichen')).catch(e => log('Kalender-Fehler: ' + e.message));
+  if (calendars.all().length && calendars.stale()) calendars.sync().then(() => log('Kalender abgeglichen')).catch(e => log('Kalender-Fehler: ' + e.message));
   const st = sm.status();
   if (!st.configured || !st.daily) return;
   const due = new Date(now.getFullYear(), now.getMonth(), now.getDate(), config.syncHour);

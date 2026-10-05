@@ -22,6 +22,7 @@ function update(id, patch) {
   Object.assign(s, patch); save(a); return s;
 }
 
+const hooks = { done: () => {} };      // der Server hängt hier z. B. das Sichern in Google Drive ein
 let ocrAvailable = null;
 function hasTesseract() {
   if (ocrAvailable !== null) return Promise.resolve(ocrAvailable);
@@ -58,12 +59,13 @@ async function ocr(id) {
   const s = find(id), d = dirOf(id);
   if (!s) return;
   try {
-    if (!(await hasTesseract())) { update(id, { status: 'done', ocr: 'unavailable' }); return; }
+    if (!(await hasTesseract())) { update(id, { status: 'done', ocr: 'unavailable' }); hooks.done(find(id)); return; }
     const files = Array.from({ length: s.pages }, (_, i) => path.join(d, `p${i + 1}.jpg`));
     fs.writeFileSync(path.join(d, 'list.txt'), files.join('\n') + '\n');
     await run('tesseract', [path.join(d, 'list.txt'), path.join(d, 'doc'), '-l', config.ocrLang, 'pdf', 'txt'], { cwd: d });
     const text = fs.existsSync(path.join(d, 'doc.txt')) ? fs.readFileSync(path.join(d, 'doc.txt'), 'utf8') : '';
     update(id, { status: 'done', ocr: 'ok', snippet: text.replace(/\s+/g, ' ').trim().slice(0, 300) });
+    hooks.done(find(id));
   } catch (e) {
     update(id, { status: 'done', ocr: 'failed', error: String(e.message || e).slice(0, 300) });
   }
@@ -110,4 +112,4 @@ function resume() {
   list().filter(s => s.status === 'draft' && Date.now() - Date.parse(s.created) > 864e5).forEach(s => remove(s.id));
 }
 
-module.exports = { list, find, create, addPage, finish, update, remove, filePath, search, resume, hasTesseract };
+module.exports = { hooks, list, find, create, addPage, finish, update, remove, filePath, search, resume, hasTesseract };

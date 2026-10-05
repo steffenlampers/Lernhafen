@@ -8,7 +8,7 @@
   "engines": { "node": ">=20" },
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test test/unit.test.js test/api.test.js test/auth.test.js test/features.test.js"
+    "test": "node --test test/unit.test.js test/api.test.js test/auth.test.js test/features.test.js test/google.test.js"
   },
   "dependencies": {
     "express": "^4.21.2",

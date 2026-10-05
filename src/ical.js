@@ -138,4 +138,4 @@ function expand(text, from, to) {
   return out.sort((a, b) => (a.date + (a.start || '')).localeCompare(b.date + (b.start || '')));
 }
 
-module.exports = { expand, parseEvents, parseDate, occurrences };
+module.exports = { expand, parseEvents, parseDate, occurrences, inTarget };
