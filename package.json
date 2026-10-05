@@ -10,7 +10,7 @@
   },
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test test/unit.test.js test/api.test.js test/auth.test.js test/features.test.js test/editors.test.js test/gdrive.test.js test/sheetcalc.test.js"
+    "test": "node --test test/unit.test.js test/api.test.js test/auth.test.js test/features.test.js test/editors.test.js test/gdrive.test.js test/sheetcalc.test.js test/backup.test.js"
   },
   "dependencies": {
     "exceljs": "^4.4.0",

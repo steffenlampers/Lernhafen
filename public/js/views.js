@@ -221,8 +221,8 @@ function vMehr() {
   ${allLinkGroups().map(g => `<details class="card grp"><summary>${esc(g.group)}<span class="small muted">${g.items.length}</span></summary><div class="links" style="margin-top:12px">${g.items.map(x => `<a class="lk" href="${esc(url(x[2]))}" target="_blank" rel="noopener"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></a>`).join('')}</div></details>`).join('')}
   <div class="row"><button class="btn" data-act="linksedit">Eigene Links</button>${S.settings.sm && sources.includes('schulmanager') ? `<a class="btn" href="${esc(url(S.settings.sm))}" target="_blank" rel="noopener">Schulmanager öffnen</a>` : ''}</div>
   <details class="card grp"><summary>Daten und Verbindungen</summary><div class="stack" style="margin-top:12px">
-    <div class="row"><button class="btn" data-act="feedopen">Termine im Handy-Kalender</button><a class="btn" href="/api/export">Sicherung herunterladen</a><label class="btn" style="cursor:pointer">Sicherung einspielen<input type="file" id="importFile" accept=".json,application/json" hidden></label></div>
-    <p class="small muted">Die Sicherung enthält Einstellungen, Termine, Mitschriften, Karten und Noten. Scans und Dateien liegen im Ordner „data“ auf dem Server.</p>
+    <div class="row"><button class="btn" data-act="feedopen">Termine im Handy-Kalender</button><button class="btn" data-d="backup">Sicherung</button><button class="btn" data-d="remote">Von überall nutzen</button></div>
+    <p class="small muted">Alles liegt im Ordner „data“ auf dem Server. Jede Nacht legt Lernhafen dort automatisch eine Sicherung an.</p>
     <div class="row"><button class="btn" data-act="settings">Einstellungen</button><button class="btn" data-act="setup">Einrichtungs-Assistent</button><span class="small muted">Version ${esc(CFG.version)}</span></div></div></details></div>`;
 }
 

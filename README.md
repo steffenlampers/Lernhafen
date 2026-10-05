@@ -23,8 +23,9 @@ Der Name der App ist einstellbar (`APP_NAME` oder im Einrichtungs-Assistenten), 
 | **Zentrale für alles** | Lernlinks je Profil (KI-Helfer, Fachportale) plus eigene Links, z. B. Hermes Agent oder die Lernplattform deiner Schule. |
 | **Eigenes Office** | Dokumente (Text), Tabellen mit Formeln und Präsentationen direkt in der App schreiben, ohne Programmwechsel. Gespeichert wird als echte `.docx`, `.xlsx` und `.pptx` im Ordner des Fachs. Alles steckt im selben Container, nichts muss dazu installiert werden. |
 | **Dateien und Ordner** | Pro Fach ein Ordner mit allen Dokumenten und Scans (`data/library/<Fach>/`). PDFs und Bilder öffnen sich direkt in der App. Der Plus-Knopf legt alles an einer Stelle an. |
-| **Google Drive** | Einmal mit Google anmelden (Code eingeben), danach gleicht Lernhafen alles von selbst mit einem Ordner „Lernhafen“ in deinem Drive ab: Sichern oder in beide Richtungen. Kein Zusatzprogramm auf dem NAS. |
-| **Sicherung** | Alle Daten als eine Datei herunterladen und wieder einspielen. |
+| **Von überall** | Mit Tailscale erreichst du Lernhafen von jedem Gerät und Ort. Alles liegt gebündelt an einem Platz, siehe „Von überall nutzen“. |
+| **Sicherung** | Alles in einer Datei herunterladen und einspielen, dazu jede Nacht eine automatische Sicherung auf dem Server (letzte 7). |
+| **Google Drive** (optional) | Wer eine Google-App hinterlegt hat, kann Lernhafen mit einem Drive-Ordner abgleichen lassen. Ohne hinterlegte Google-App bleibt der Punkt unsichtbar. |
 
 ## Profile
 
@@ -107,7 +108,24 @@ In jedem Fach gibt es „Neues Dokument“, „Neue Tabelle“ und „Neue Präs
 
 **Grenzen:** Das ist ein schlankes Office, kein Ersatz für Word, Excel und PowerPoint. Öffnest du eine Datei, die woanders entstanden ist, wird sie beim Speichern vereinfacht (Bilder, Diagramme und besondere Layouts gehen in der bearbeiteten Fassung verloren). Davor legt Lernhafen einmalig eine Kopie „(Original)“ an. Die Tabelle zeigt bis zu 2000 Zeilen und 52 Spalten.
 
-## Google Drive
+## Von überall nutzen (Tailscale)
+
+Lernhafen ist der eine Ort für alles: Mitschriften, Scans, Dateien, Dokumente, Tabellen, Präsentationen, Termine und Stundenplan. Damit du von überall darankommst:
+
+1. Tailscale auf dem NAS bzw. Rechner installieren, auf dem Lernhafen läuft, und anmelden.
+2. Tailscale auf dem Gerät installieren, mit dem du arbeitest, und mit demselben Konto anmelden.
+3. Im Browser `http://<Tailscale-Adresse>:<Port>` öffnen, zum Beispiel `http://100.x.y.z:8091`. Am Handy „Zum Startbildschirm hinzufügen“.
+
+Die Anleitung steht auch in der App unter „Mehr → Daten und Verbindungen → Von überall nutzen“. Dafür muss weder ein Port im Router geöffnet noch ein Dienst im Internet erreichbar sein. Setze `APP_PASSWORD`, sobald mehrere Personen im Tailscale-Netz sind.
+
+## Sicherung
+
+- **Von Hand:** „Mehr → Daten und Verbindungen → Sicherung → Alles herunterladen“ liefert eine `.tar.gz` mit Daten, Dateien und Scans. „Sicherung einspielen“ stellt sie auf einer anderen Installation wieder her (Umzug auf ein neues NAS). Passwörter und Anmeldedaten sind nicht enthalten.
+- **Automatisch:** Jede Nacht (nach 3 Uhr) legt Lernhafen eine Sicherung in `data/backups` an und behält die letzten 7 (`BACKUP_KEEP`). Mit `BACKUP_DIR` zeigst du auf eine andere Platte oder ein anderes Volume, damit die Sicherung auch einen Plattenausfall überlebt. Beispiel in der Compose-Datei: Volume `/share/Sicherung:/backups` und `BACKUP_DIR=/backups`.
+
+## Google Drive (optional)
+
+Standardmäßig ist Drive **ausgeblendet**. Es erscheint unter „Mehr → Verbindungen“ erst, wenn für die Installation eine Google-App hinterlegt ist (Variablen `GOOGLE_CLIENT_ID` und `GOOGLE_CLIENT_SECRET`, oder fest im Image über GitHub-Secrets). Du brauchst Drive nicht, um Lernhafen von überall zu nutzen.
 
 „Mehr → Verbindungen → Google Drive → Anmelden“. Lernhafen zeigt einen kurzen Code, den du auf `google.com/device` eingibst. Mehr ist für Nutzer nicht zu tun.
 
@@ -161,7 +179,7 @@ Unter „Mehr → Daten und Verbindungen → Termine im Handy-Kalender“ findes
 
 ## Stand: was getestet ist und was nicht
 
-- **Automatisch getestet (54 Tests):** Plan-Umwandlung, Schulmanager-Passwort-Hash, iCal (Wiederholungen, Ausnahmen, Verlegung, Zeitzonen, mehrtägig), Kalender-Abruf mit Fehlern, Handy-Abo (Inhalt, Erinnerungen, Falten, Link erneuern), Dateien (Typen, Pfadtricks), Scans, Suche, Sicherung, Anmeldung und Sperre, alle Profile.
+- **Automatisch getestet (57 Tests):** Plan-Umwandlung, Schulmanager-Passwort-Hash, iCal (Wiederholungen, Ausnahmen, Verlegung, Zeitzonen, mehrtägig), Kalender-Abruf mit Fehlern, Handy-Abo (Inhalt, Erinnerungen, Falten, Link erneuern), Dateien (Typen, Pfadtricks), Scans, Suche, Sicherung, Anmeldung und Sperre, alle Profile.
 - **Im echten Browser durchgespielt (Handy- und Desktop-Breite, hell und dunkel):** Einrichtungs-Assistent, Kalender-Link, Heute mit Uhrzeiten, Mitschrift zur Stunde, Termin mit Schritten, Lernplan, Karteikarten-Runde, Noten, Datei- und Scan-Upload, Wochenplan von Hand, Handy-Abo, Suche.
 - **Nicht getestet:** die Anbindung an das **echte Google** (getestet gegen einen nachgebauten Google-Server: Anmeldung per Code, Hochladen, Konflikte, Löschen, Schutz vor leerem Drive, Token-Erneuerung), der Dauerbetrieb auf dem NAS, Word-/Excel-/PowerPoint-Dateien aus fremden Programmen mit vielen Sonderfunktionen.
 - **Noch nicht enthalten:** Seitenzuschnitt und Kantenerkennung per Hand, Handschrifterkennung, mehrere Nutzer, englische Oberfläche.

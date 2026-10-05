@@ -13,7 +13,7 @@ function gdLastText() {
   return 'Letzter Abgleich ' + gdTime(l.time) + (bits.length ? ': ' + bits.join(', ') : ': alles aktuell');
 }
 function gdriveRow() {            // Zeile unter „Verbindungen“
-  if (!GD) return null;
+  if (!GD || (!GD.available && !GD.connected)) return null;   // ohne hinterlegte Google-App bleibt Drive unsichtbar
   if (gdOn()) return ['Google Drive', esc(GD.email || 'verbunden') + ' · ' + esc(gdLastText()), 'Einstellungen', 'data-g="open"', false];
   return ['Google Drive', 'Alle Dateien automatisch in Drive sichern. Einmal anmelden, fertig.', 'Anmelden', 'data-g="open"', true];
 }

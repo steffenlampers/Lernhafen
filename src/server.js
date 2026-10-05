@@ -14,6 +14,7 @@ const files = require('./files');
 const fs = require('fs');
 const editors = require('./editors');
 const gdrive = require('./gdrive');
+const backup = require('./backup');
 
 const app = express();
 app.disable('x-powered-by');
@@ -162,6 +163,24 @@ app.post('/api/import', express.json({ limit: '20mb' }), wrap(async (req, res) =
   if (b.plan && typeof b.plan.days === 'object') store.write('plan', b.plan);
   if (Array.isArray(b.calendars)) calendars.save(b.calendars);
   res.json({ ok: true });
+}));
+
+/* ---- Komplettsicherung (Daten, Dateien, Scans) ---- */
+app.get('/api/backup', wrap(async (req, res) => {
+  const p = backup.stream();
+  res.setHeader('Content-Type', 'application/gzip');
+  res.setHeader('Content-Disposition', `attachment; filename="lernhafen-komplett-${new Date().toISOString().slice(0, 10)}.tar.gz"`);
+  p.stdout.pipe(res); res.on('close', () => p.kill());
+}));
+app.get('/api/backup/list', (req, res) => res.json({ backups: backup.list() }));
+app.post('/api/backup/now', wrap(async (req, res) => res.json({ name: await backup.run(), backups: backup.list() })));
+app.post('/api/backup/restore', wrap(async (req, res) => {
+  const tmp = path.join(config.dataDir, '.upload-' + process.pid + '.tar.gz');
+  try {
+    await new Promise((ok, fail) => { const w = fs.createWriteStream(tmp); req.pipe(w); w.on('finish', ok); w.on('error', fail); req.on('error', fail); });
+    const n = backup.restore(tmp);
+    files.reindex(); res.json({ ok: true, entries: n });
+  } finally { try { fs.unlinkSync(tmp); } catch (e) { /* weg */ } }
 }));
 
 /* ---- Suche über Mitschriften und Scans ---- */

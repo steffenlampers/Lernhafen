@@ -3,9 +3,11 @@
 const config = require('./config');
 const sm = require('./schulmanager');
 const calendars = require('./calendars');
+const backup = require('./backup');
 
 function tick(log) {
   const now = new Date();
+  if (backup.due(now) && !backup.busy) { backup.busy = true; backup.run().then(n => log('Nächtliche Sicherung: ' + n), e => log('Sicherung-Fehler: ' + e.message)).finally(() => { backup.busy = false; }); }
   if (now.getHours() < config.syncHour) return;
   if (calendars.all().length && calendars.stale()) calendars.sync().then(() => log('Kalender abgeglichen')).catch(e => log('Kalender-Fehler: ' + e.message));
   const st = sm.status();
