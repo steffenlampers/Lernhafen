@@ -86,12 +86,10 @@ async function searchSheet() {
     if (q.length < 2) { box.innerHTML = '<p class="empty">Gib mindestens zwei Buchstaben ein.</p>'; return; }
     try {
       const r = await api('GET', '/search?q=' + encodeURIComponent(q)), evs = S.events.filter(e => e.title.toLowerCase().includes(q)).slice(0, 10), cds = S.cards.filter(c => (c.front + ' ' + c.back).toLowerCase().includes(q)).slice(0, 10), fls = FILES.filter(f => f.name.toLowerCase().includes(q)).slice(0, 10);
-      let dr = []; if (gOn()) { try { dr = (await api('GET', '/google/drive?q=' + encodeURIComponent(q))).files.filter(f => !f.folder).slice(0, 10); } catch (er) { dr = []; } }
       box.innerHTML = (r.notes.map(n => `<div class="doc"><span class="ft">Mitschrift</span><span class="grow">${esc(n.title)} <span class="muted">${esc(n.subject)}</span></span><button class="btn sm" data-act="noteopen" data-id="${n.id}">Öffnen</button></div>`).join('') +
         r.scans.map(s => `<div class="doc"><span class="ft">Scan</span><span class="grow">${esc(s.title)} <span class="muted">${esc(s.subject)}</span></span><button class="btn sm" data-act="scanopen" data-id="${s.id}">Öffnen</button></div>`).join('') +
         cds.map(c => `<div class="doc"><span class="ft">Karte</span><span class="grow">${esc(c.front.slice(0, 80))} <span class="muted">${esc(c.sid)}</span></span><button class="btn sm" data-act="cardedit" data-id="${c.id}">Öffnen</button></div>`).join('') +
         fls.map(f => `<div class="doc"><span class="ft">Datei</span><a class="grow" href="/api/files/${f.id}/download" target="_blank" rel="noopener">${esc(f.name)}</a></div>`).join('') +
-        dr.map(f => `<div class="doc"><span class="ft">Drive</span><a class="grow" href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.name)}</a></div>`).join('') +
         evs.map(e => `<div class="doc"><span class="ft">Termin</span><span class="grow">${esc(e.title)} <span class="muted">${fmtDate(ed(e))}</span></span></div>`).join('')) || '<p class="empty">Nichts gefunden.</p>';
     } catch (e) { box.innerHTML = `<p class="empty">${esc(e.message)}</p>`; }
   }, 250); };

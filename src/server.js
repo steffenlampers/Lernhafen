@@ -11,9 +11,9 @@ const scheduler = require('./scheduler');
 const calendars = require('./calendars');
 const feed = require('./feed');
 const files = require('./files');
-const google = require('./google');
 const fs = require('fs');
-const office = require('./office');
+const editors = require('./editors');
+const gdrive = require('./gdrive');
 
 const app = express();
 app.disable('x-powered-by');
@@ -21,7 +21,7 @@ app.set('trust proxy', true);
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'same-origin');
-  res.setHeader('Content-Security-Policy', `default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; frame-ancestors 'self'; frame-src 'self'${office.enabled() ? ' ' + office.publicOrigin(req) : ''}`);
+  res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; frame-ancestors 'self'; frame-src 'self'");
   next();
 });
 app.use(express.json({ limit: '5mb' }));
@@ -43,15 +43,6 @@ app.get('/feed/:token/termine.ics', (req, res) => {
   res.send(feed.build(st, profile, (st.settings && st.settings.appName) || config.appName));
 });
 
-office.mount(app, express);      // Collabora ruft diese Adressen selbst auf: gesichert durch ein Token pro Datei, nicht durch das Passwort
-
-/* Rückruf von Google über die Weiterleitungsseite. Ohne Anmeldung erreichbar, weil nur der geheime Status der offenen Verbindung zählt. */
-app.get('/api/google/callback', async (req, res) => {
-  const page = (ok, msg) => res.status(ok ? 200 : 400).type('html').send(`<!doctype html><html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Google</title>${ok ? '<meta http-equiv="refresh" content="1;url=/?google=ok">' : ''}<body style="font:16px system-ui;max-width:30em;margin:3em auto;padding:0 1em"><h2>${ok ? 'Mit Google verbunden' : 'Das hat nicht geklappt'}</h2><p>${String(msg).replace(/[<>&]/g, '')}</p><p><a href="/${ok ? '?google=ok' : ''}">Zurück zur App</a></p></body></html>`);
-  try { await google.callback(req.query.code, req.query.state, req.query.error); page(true, 'Du wirst gleich zurückgeleitet.'); }
-  catch (e) { page(false, e.message); }
-});
-
 app.use('/api', auth.guard);
 
 app.get('/api/config', wrap(async (req, res) => {
@@ -69,7 +60,6 @@ app.put('/api/state', (req, res) => {
   if (!st || typeof st !== 'object' || Array.isArray(st)) return res.status(400).json({ error: 'Ungültige Daten.' });
   st._rev = Date.now();
   store.write('state', st);
-  if (google.status().push.enabled) schedulePush();
   res.json({ rev: st._rev });
 });
 
@@ -116,78 +106,6 @@ app.get('/api/scans/:id/file/:name', (req, res) => {
   res.sendFile(f);
 });
 
-/* ---- Google (Drive, Docs, Kalender, Gmail) ---- */
-let pushT = 0, pushRunning = false, pushDirty = false;
-function schedulePush() { clearTimeout(pushT); pushT = setTimeout(runPush, 3000); }
-async function runPush() {
-  if (pushRunning) { pushDirty = true; return; }
-  pushRunning = true;
-  try {
-    do {
-      pushDirty = false;
-      const st = store.read('state', {}) || {}, profile = profiles.load((st.settings || {}).profile || config.profile);
-      const r = await google.pushEvents(st, profile, (st.settings && st.settings.appName) || config.appName);
-      if (!r.skipped) google.setPushResult(true, `${r.made} neu, ${r.upd} geändert, ${r.del} entfernt`);
-    } while (pushDirty);
-  } catch (e) { google.setPushResult(false, e.message); } finally { pushRunning = false; }
-}
-scans.hooks.done = s => {
-  const st = google.status();
-  if (!st.connected || !st.autoUpload || !s) return;
-  (async () => {
-    try {
-      const folderId = await google.ensureFolder(['Lernhafen', s.subject || 'Ohne Fach', 'Scans']);
-      const pdf = scans.filePath(s.id, 'doc.pdf');
-      if (pdf) await google.driveUpload({ name: s.title + '.pdf', mime: 'application/pdf', buf: fs.readFileSync(pdf), folderId });
-      else for (let i = 1; i <= s.pages; i++) await google.driveUpload({ name: `${s.title} - Seite ${i}.jpg`, mime: 'image/jpeg', buf: fs.readFileSync(scans.filePath(s.id, `p${i}.jpg`)), folderId });
-      scans.update(s.id, { drive: true });
-    } catch (e) { scans.update(s.id, { driveError: String(e.message || e).slice(0, 200) }); }
-  })();
-};
-const mimeOf = n => ({ '.pdf': 'application/pdf', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.txt': 'text/plain' })[require('path').extname(n).toLowerCase()] || 'application/octet-stream';
-
-app.get('/api/google/status', (req, res) => res.json(google.status()));
-app.post('/api/google/begin', wrap(async (req, res) => {
-  if (!auth.enabled()) throw new Error('Setze zuerst ein Passwort für die App (APP_PASSWORD). Sonst könnte jeder im Netzwerk auf dein Google-Konto zugreifen.');
-  res.json(google.begin(Object.assign({}, req.body || {}, { origin: (req.body || {}).origin })));
-}));
-app.post('/api/google/finish', wrap(async (req, res) => res.json(await google.finish((req.body || {}).input))));
-app.delete('/api/google', wrap(async (req, res) => res.json(await google.disconnect())));
-app.get('/api/google/drive', wrap(async (req, res) => res.json(await google.driveList({ parent: req.query.parent, q: String(req.query.q || '').slice(0, 100) }))));
-app.get('/api/google/drive/text/:id', wrap(async (req, res) => res.json(await google.driveText(req.params.id))));
-app.post('/api/google/drive/folder', wrap(async (req, res) => res.json(await google.folderCreate((req.body || {}).name || 'Neuer Ordner', (req.body || {}).parent))));
-app.post('/api/google/drive/upload', wrap(async (req, res) => {
-  const b = req.body || {}, out = [];
-  if (!b.folderId && b.subject) b.folderId = await google.ensureFolder(['Lernhafen', String(b.subject).slice(0, 60)]);
-  if (b.kind === 'scan') {
-    const s = scans.find(b.id); if (!s || s.status !== 'done') throw new Error('Der Scan ist noch nicht fertig.');
-    const pdf = scans.filePath(s.id, 'doc.pdf');
-    if (pdf) out.push(await google.driveUpload({ name: s.title + '.pdf', mime: 'application/pdf', buf: fs.readFileSync(pdf), folderId: b.folderId }));
-    else for (let i = 1; i <= s.pages; i++) out.push(await google.driveUpload({ name: `${s.title} - Seite ${i}.jpg`, mime: 'image/jpeg', buf: fs.readFileSync(scans.filePath(s.id, `p${i}.jpg`)), folderId: b.folderId }));
-  } else if (b.kind === 'file') {
-    const f = files.find(b.id), p = files.filePath(b.id); if (!f || !p) throw new Error('Datei nicht gefunden.');
-    out.push(await google.driveUpload({ name: f.name, mime: mimeOf(f.name), buf: fs.readFileSync(p), folderId: b.folderId }));
-  } else throw new Error('Unbekannte Art.');
-  res.json({ uploaded: out });
-}));
-/** Fach-Mitschrift in Drive: Ordner „Lernhafen/<Fach>“ und ein Google Doc darin, alles automatisch. */
-app.post('/api/google/subject', wrap(async (req, res) => {
-  const subject = String((req.body || {}).subject || '').slice(0, 60);
-  if (!subject) throw new Error('Kein Fach angegeben.');
-  const folderId = await google.ensureFolder(['Lernhafen', subject]);
-  const doc = (req.body || {}).doc === false ? null : await google.docCreate({ title: 'Mitschrift ' + subject, folderId });
-  res.json({ folderId, folderUrl: 'https://drive.google.com/drive/folders/' + folderId, doc });
-}));
-app.put('/api/google/autoupload', wrap(async (req, res) => { google.setAutoUpload((req.body || {}).enabled); res.json(google.status()); }));
-app.post('/api/google/doc', wrap(async (req, res) => res.json(await google.docCreate(req.body || {}))));
-app.post('/api/google/doc/:id/append', wrap(async (req, res) => res.json(await google.docAppend(req.params.id, (req.body || {}).heading || 'Eintrag', (req.body || {}).body || ''))));
-app.get('/api/google/doc/:id/tail', wrap(async (req, res) => res.json(await google.docTail(req.params.id))));
-app.get('/api/google/calendars', wrap(async (req, res) => res.json(await google.calendarList())));
-app.put('/api/google/pull', wrap(async (req, res) => { google.setPull((req.body || {}).list); res.json(google.status()); }));
-app.put('/api/google/push', wrap(async (req, res) => { google.setPush((req.body || {}).enabled); if ((req.body || {}).enabled) schedulePush(); res.json(google.status()); }));
-app.post('/api/google/push/now', wrap(async (req, res) => { await runPush(); res.json(google.status()); }));
-app.get('/api/google/gmail', wrap(async (req, res) => res.json(await google.gmailInbox(req.query.q))));
-
 /* ---- Kalender-Quellen (iCal) und Abo-Link ---- */
 app.get('/api/calendars', (req, res) => res.json({ calendars: calendars.list(), ...calendars.events() }));
 app.post('/api/calendars/resync', wrap(async (req, res) => res.json({ calendars: calendars.list(), ...(await calendars.sync()) })));
@@ -196,10 +114,26 @@ app.post('/api/calendars/sync', wrap(async (req, res) => res.json({ calendars: c
 app.get('/api/feed', (req, res) => res.json({ path: `/feed/${feed.token()}/termine.ics` }));
 app.post('/api/feed/rotate', (req, res) => { feed.rotate(); res.json({ path: `/feed/${feed.token()}/termine.ics` }); });
 
-/* ---- Office im Browser ---- */
-app.get('/api/office/status', wrap(async (req, res) => res.json(await office.status())));
-app.post('/api/library/new', wrap(async (req, res) => { const b = req.body || {}; res.json(files.create(b.kind, b.subject, b.name)); }));
-app.post('/api/office/open', wrap(async (req, res) => res.json(await office.editorUrl(req, String((req.body || {}).id || '')))));
+/* ---- Google Drive (in der App eingebaut) ---- */
+app.get('/api/gdrive/status', (req, res) => res.json(gdrive.status()));
+app.put('/api/gdrive/creds', wrap(async (req, res) => res.json(gdrive.saveCreds((req.body || {}).clientId, (req.body || {}).clientSecret))));
+app.post('/api/gdrive/connect', wrap(async (req, res) => res.json(await gdrive.connect())));
+app.get('/api/gdrive/poll', wrap(async (req, res) => res.json(await gdrive.poll())));
+app.put('/api/gdrive/settings', wrap(async (req, res) => res.json(gdrive.setSettings(req.body || {}))));
+app.post('/api/gdrive/sync', wrap(async (req, res) => { const r = await gdrive.sync(); res.json({ result: r, status: gdrive.status() }); }));
+app.delete('/api/gdrive', wrap(async (req, res) => res.json(await gdrive.disconnect())));
+
+/* ---- Eingebaute Editoren (Text, Tabellen, Folien) ---- */
+app.post('/api/library/new', wrap(async (req, res) => {
+  const b = req.body || {};
+  res.json(files.create(b.kind, b.subject, b.name, b.kind === 'praesentation' ? await editors.slidesTemplate() : undefined));
+}));
+app.get('/api/editor/doc/:id', wrap(async (req, res) => res.json(await editors.docRead(req.params.id))));
+app.put('/api/editor/doc/:id', express.json({ limit: '8mb' }), wrap(async (req, res) => { const f = await editors.docWrite(req.params.id, (req.body || {}).html); res.json({ modified: f.modified, size: f.size }); }));
+app.get('/api/editor/sheet/:id', wrap(async (req, res) => res.json(await editors.sheetRead(req.params.id))));
+app.put('/api/editor/sheet/:id', express.json({ limit: '8mb' }), wrap(async (req, res) => { const f = await editors.sheetWrite(req.params.id, (req.body || {}).sheets); res.json({ modified: f.modified, size: f.size }); }));
+app.get('/api/editor/slides/:id', wrap(async (req, res) => res.json(await editors.slidesRead(req.params.id))));
+app.put('/api/editor/slides/:id', express.json({ limit: '8mb' }), wrap(async (req, res) => { const f = await editors.slidesWrite(req.params.id, (req.body || {}).slides); res.json({ modified: f.modified, size: f.size }); }));
 
 /* ---- Dateien zu Fächern ---- */
 app.get('/api/files', (req, res) => res.json({ files: files.list() }));
@@ -246,7 +180,12 @@ app.get('/manifest.webmanifest', (req, res) => {
   res.type('application/manifest+json').json({ name, short_name: name.slice(0, 12), start_url: '/', display: 'standalone', background_color: '#EEF3F3', theme_color: '#0E7C7B', lang: 'de',
     icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }] });
 });
+files.hooks.change = () => gdrive.schedule();
+scans.hooks.done = () => gdrive.schedule();
 app.use('/api', (req, res) => res.status(404).json({ error: 'Nicht gefunden.' }));
+for (const [name, mod, dir] of [['quill', 'quill', 'dist']]) {
+  app.use('/vendor/' + name, express.static(path.join(__dirname, '..', 'node_modules', mod, dir), { maxAge: '7d' }));
+}
 app.use(express.static(path.join(__dirname, '..', 'public'), { maxAge: '5m' }));
 app.use((err, req, res, next) => res.status(err.status || 500).json({ error: err.status === 413 ? 'Datei zu groß.' : 'Serverfehler.' }));
 
@@ -254,6 +193,8 @@ if (require.main === module) {
   app.listen(config.port, () => {
     console.log(`${config.appName} ${config.version} läuft auf Port ${config.port}, Daten in ${config.dataDir}`);
     files.migrate();
+    files.reindex();
+    gdrive.start();
     scans.resume();
     scheduler.start();
   });

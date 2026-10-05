@@ -130,7 +130,7 @@ function vWoche() {
   const lost = S.events.filter(e => !e.done && e.slot && e.slot.date === wsel && !shown.has(e.slot.block) && resolve(e).moved);
   const ext = extOn(wsel), hasPlan = PLAN || hasTimetableCal() || (S.timetable || []).length;
   return `<div class="grid">${smCard()}
-  ${!hasPlan ? `<div class="card full"><h2>Stundenplan einrichten</h2><p class="muted" style="margin:6px 0 12px">Hole ihn aus Schulmanager, einem Kalender-Link (Uni, Moodle, Google) oder trage ihn von Hand ein.</p><button class="btn primary" data-act="plansrc">Quelle wählen</button></div>` : ''}
+  ${!hasPlan ? `<div class="card full"><h2>Stundenplan einrichten</h2><p class="muted" style="margin:6px 0 12px">Hole ihn aus Schulmanager, einem Kalender-Link (Uni, Moodle, Google Kalender) oder trage ihn von Hand ein.</p><button class="btn primary" data-act="plansrc">Quelle wählen</button></div>` : ''}
   <div class="card full"><div class="card-head"><h2>Woche ab ${fmtDate(ws)}</h2><div class="row"><button class="btn sm" data-act="wprev">Zurück</button><button class="btn sm" data-act="wtoday">Heute</button><button class="btn sm" data-act="wnext">Weiter</button></div></div>
     <div class="days" role="group" aria-label="Wochentag">${[0, 1, 2, 3, 4].map(i => { const d = addDays(ws, i), n = blocksOn(d).length; return `<button data-act="wday" data-d="${d}" aria-pressed="${d === wsel}" class="${d === t ? 'istoday' : ''}">${DAYS[i].slice(0, 2)}<small>${parse(d).getDate()}.${parse(d).getMonth() + 1}.</small><small>${n ? n + ' Einträge' : 'frei'}</small></button>`; }).join('')}</div>
     <div style="margin-top:16px"><h3 style="margin-bottom:10px">${DAYS[dowOf(wsel)]}, ${fmtDate(wsel).slice(4)}</h3>
@@ -171,7 +171,7 @@ function scanBadge(s) {
 }
 function scanRow(s) {
   return `<div class="item"><div class="grow"><b>${esc(s.title)}</b><div class="small muted">${s.date ? fmtDate(s.date) + ' · ' : ''}${s.pages} Seite${s.pages === 1 ? '' : 'n'} ${scanBadge(s)}</div>${s.snippet ? `<div class="small muted" style="margin-top:2px">${esc(s.snippet.slice(0, 110))} …</div>` : ''}</div>
-    <div class="row"><button class="btn sm" data-act="scanopen" data-id="${s.id}">Öffnen</button>${gOn() && s.status === 'done' ? `<button class="btn sm ghost" data-g="dsave" data-kind="scan" data-id="${s.id}" data-k="${esc(s.subject || '')}">${s.drive ? 'In Drive ✓' : 'In Drive'}</button>` : ''}</div></div>`;
+    <div class="row"><button class="btn sm" data-act="scanopen" data-id="${s.id}">Öffnen</button></div></div>`;
 }
 const sizeText = n => n > 1048576 ? fnum(n / 1048576) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
 function vFach() {
@@ -196,7 +196,6 @@ function vSubject(k) {
     <div class="row" style="margin-top:12px"><button class="btn primary" data-act="newnote" data-k="${esc(k)}">Neue Mitschrift</button><button class="btn" data-act="scan" data-k="${esc(k)}">Scannen</button><button class="btn" data-act="cardnew" data-k="${esc(k)}">Karteikarte</button></div>
     <p class="small muted" style="margin-top:8px">${cards} Karteikarte${cards === 1 ? '' : 'n'}${P.credits.enabled && s.credits ? ` · ${s.credits} ${esc(P.credits.label)}` : ''}</p>
     ${s.links.length ? `<div style="margin-top:12px">${s.links.map(l => `<a class="doc" href="${esc(url(l.u))}" target="_blank" rel="noopener">${esc(l.t || l.u)}</a>`).join('')}</div>` : ''}</div>
-  ${googleSubjectCard(k)}
   ${evs.length ? `<div class="card"><div class="card-head"><h2>Anstehend</h2></div>${evs.map(evRow).join('')}</div>` : ''}
   <div class="card"><div class="card-head"><h2>Mitschriften</h2></div>${notes.length ? notes.map(n => `<div class="item"><div class="grow"><b>${esc(n.title || 'Ohne Titel')}</b><div class="small muted">${n.date ? fmtDate(n.date) : ''}${n.scans && n.scans.length ? ` · ${n.scans.length} Scan${n.scans.length === 1 ? '' : 's'}` : ''}</div>${n.body ? `<div class="small muted">${esc(n.body.replace(/\s+/g, ' ').slice(0, 100))}</div>` : ''}</div><button class="btn sm" data-act="noteopen" data-id="${n.id}">Öffnen</button></div>`).join('') : '<p class="empty">Noch keine Mitschrift. Lege eine an oder scanne eine Seite.</p>'}</div>
   ${docsCard(k)}
@@ -218,7 +217,6 @@ function vMehr() {
     <div class="bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" style="margin:10px 0 12px"><i style="width:${pct}%"></i></div>
     ${entries.slice(0, 5).map(e => `<div class="item"><div class="grow"><b class="num">${String(e.hours).replace('.', ',')} Std.</b> <span class="muted">${fmtDate(e.date)}${e.place ? ' · ' + esc(e.place) : ''}</span>${e.note ? `<div class="small muted">${esc(e.note)}</div>` : ''}</div><button class="icon-btn" data-act="predit" data-id="${e.id}">Ändern</button></div>`).join('') || '<p class="empty">Noch keine Stunden eingetragen.</p>'}</div>` : ''}
   ${connectionsCard()}
-  ${gmailCard()}
   <div class="card"><div class="card-head"><h2>Alle Scans</h2></div>${SCANS.length ? SCANS.slice().reverse().slice(0, 10).map(scanRow).join('') : '<p class="empty">Noch keine Scans.</p>'}</div>
   ${allLinkGroups().map(g => `<details class="card grp"><summary>${esc(g.group)}<span class="small muted">${g.items.length}</span></summary><div class="links" style="margin-top:12px">${g.items.map(x => `<a class="lk" href="${esc(url(x[2]))}" target="_blank" rel="noopener"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></a>`).join('')}</div></details>`).join('')}
   <div class="row"><button class="btn" data-act="linksedit">Eigene Links</button>${S.settings.sm && sources.includes('schulmanager') ? `<a class="btn" href="${esc(url(S.settings.sm))}" target="_blank" rel="noopener">Schulmanager öffnen</a>` : ''}</div>
@@ -245,7 +243,6 @@ function render() {
   $('#tabs').innerHTML = TABS.map(([k, v]) => `<button class="tab" role="tab" aria-selected="${tab === k}" data-act="tab" data-t="${k}">${k === 'faecher' ? esc(P.terms.subjects) : v}</button>`).join('');
   $('#main').innerHTML = VIEWS[tab]();
   $('#moreBtn').setAttribute('aria-pressed', String(tab === 'mehr'));
-  if (tab === 'mehr') loadGmail();
   applyTheme(); applyBrand();
 }
 function go(t) { tab = t; if (t !== 'faecher') openSub = ''; if (t !== 'lernen') lsub = ''; try { localStorage.setItem('lh-tab', t); } catch (e) { /* egal */ } render(); window.scrollTo(0, 0); }

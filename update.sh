@@ -1,7 +1,7 @@
 #!/bin/sh
 # Lernhafen aktualisieren: neues Image laden und den Container neu starten. Die Daten im Ordner "data" bleiben unverändert.
 # Aufruf per SSH im Ordner mit der Compose-Datei:   sh update.sh
-# Andere Compose-Datei (eigene IP oder Office):      sh update.sh docker-compose.eigene-ip.yml   bzw.   sh update.sh docker-compose.office.yml
+# Andere Compose-Datei (eigene IP):      sh update.sh docker-compose.eigene-ip.yml
 set -e
 cd "$(dirname "$0")"
 FILE="${1:-docker-compose.yml}"

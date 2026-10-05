@@ -96,7 +96,6 @@ function plansrcSheet() {
   const src = P.sources || ['ical', 'manual'];
   showSheet('Woher kommt dein Stundenplan?', `<div class="stack">
     ${src.includes('schulmanager') ? `<button class="card stack" data-act="smopen" style="text-align:left;cursor:pointer;font:inherit;color:inherit"><b>Schulmanager Online</b><span class="small muted">Dein Server holt Plan, Ausfälle und Vertretungen jeden Morgen selbst.</span></button>` : ''}
-    <button class="card stack" data-g="open" style="text-align:left;cursor:pointer;font:inherit;color:inherit"><b>Google Kalender</b><span class="small muted">Melde dich bei Google an, dann erscheinen deine Kalender in Lernhafen.</span></button>
     <button class="card stack" data-act="calsopen" style="text-align:left;cursor:pointer;font:inherit;color:inherit"><b>Kalender-Link (iCal)</b><span class="small muted">Für Hochschule, Moodle, Google Kalender, Nextcloud und viele Stundenplan-Programme.</span></button>
     <button class="card stack" data-act="ttopen" style="text-align:left;cursor:pointer;font:inherit;color:inherit"><b>Von Hand eintragen</b><span class="small muted">Ein Wochenplan, der sich jede Woche wiederholt.</span></button>
     <div class="row end"><button class="btn ghost" data-act="fclose">Später</button></div></div>`);

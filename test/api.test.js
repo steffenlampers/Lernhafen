@@ -95,9 +95,3 @@ test('Suche findet Mitschriften', async () => {
   assert.strictEqual(r.notes.length, 1);
   assert.strictEqual(r.notes[0].subject, 'Anat/Phys');
 });
-
-test('Google verbinden ist ohne App-Passwort gesperrt', async () => {
-  const r = await j('POST', '/google/begin', { clientId: '1-a.apps.googleusercontent.com', clientSecret: 'x' });
-  assert.strictEqual(r.status, 400);
-  assert.match(r.body.error, /APP_PASSWORD/);
-});

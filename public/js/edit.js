@@ -46,7 +46,6 @@ function noteModal(k, id, prefill = {}) {
   showSheet(found ? 'Mitschrift' : 'Neue Mitschrift', `<form id="mf">
     ${F('Titel', 'title', n.title, 'text', 'maxlength="140" required')}${F('Datum', 'date', n.date, 'date')}
     <label class="field"><span>Mitschrift</span><textarea name="body" id="nbody" rows="10">${esc(n.body)}</textarea></label>
-    ${!found && gOn() && subj(k).gdoc ? '<label class="chk"><input type="checkbox" name="gdoc" checked><span>Auch ins Google Doc dieses Fachs eintragen</span></label>' : ''}
     ${scans.length ? `<div class="field"><span>Gescannte Seiten</span>${scans.map(s => `<div class="stack" style="margin-bottom:10px"><div class="thumbs">${Array.from({ length: s.pages }, (_, i) => `<a href="/api/scans/${s.id}/file/p${i + 1}.jpg" target="_blank" rel="noopener"><img src="/api/scans/${s.id}/file/p${i + 1}.jpg" alt="Seite ${i + 1}" loading="lazy"></a>`).join('')}</div>
       <div class="row small">${scanBadge(s)}${s.ocr === 'ok' ? `<button type="button" class="btn sm" data-act="scantext" data-id="${s.id}">Erkannten Text einfügen</button><a class="btn sm" href="/api/scans/${s.id}/file/doc.pdf" target="_blank" rel="noopener">PDF öffnen</a>` : ''}</div></div>`).join('')}</div>` : ''}
     <div class="row end">${found ? '<button type="button" class="btn danger" id="mdel" style="margin-right:auto">Löschen</button>' : ''}<button type="button" class="btn ghost" id="mx">Abbrechen</button><button class="btn primary">Speichern</button></div></form>`);
@@ -57,7 +56,6 @@ function noteModal(k, id, prefill = {}) {
     Object.assign(n, { title: d.title.trim(), date: d.date, body: d.body });
     if (!found) notesOf(k).push(n);
     closeModal(); save(); render(); toast('Gespeichert');
-    if (!found && d.gdoc === 'on' && subj(k).gdoc) api('POST', '/google/doc/' + subj(k).gdoc.id + '/append', { heading: n.title, body: n.body }).then(() => toast('Auch im Google Doc eingetragen')).catch(er => toast('Google Doc: ' + er.message));
   };
   $('#nbody').focus();
 }
