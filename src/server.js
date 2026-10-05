@@ -92,13 +92,11 @@ app.post('/api/scans/:id/pages', express.raw({ type: ['image/*', 'application/oc
 }));
 app.post('/api/scans/:id/finish', wrap(async (req, res) => res.json(scans.finish(req.params.id, req.body || {}))));
 app.patch('/api/scans/:id', wrap(async (req, res) => {
-  const b = req.body || {}, patch = {};
-  if (typeof b.subject === 'string') patch.subject = b.subject.slice(0, 40);
-  if (typeof b.title === 'string') patch.title = b.title.slice(0, 120);
-  const s = scans.update(req.params.id, patch);
+  const s = scans.edit(req.params.id, req.body || {});
   if (!s) throw new Error('Scan nicht gefunden.');
   res.json(s);
 }));
+app.post('/api/scans/order', wrap(async (req, res) => { scans.reorder(String((req.body || {}).subject || ''), (req.body || {}).ids); res.json({ scans: scans.list().filter(s => s.status !== 'draft') }); }));
 app.delete('/api/scans/:id', (req, res) => res.json({ ok: scans.remove(req.params.id) }));
 app.get('/api/scans/:id/file/:name', (req, res) => {
   const f = scans.filePath(req.params.id, req.params.name);

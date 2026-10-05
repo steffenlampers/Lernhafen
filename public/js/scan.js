@@ -67,7 +67,7 @@ function scanOpen(id) {
   showSheet(s.title, `<div class="thumbs">${Array.from({ length: s.pages }, (_, i) => `<a href="/api/scans/${s.id}/file/p${i + 1}.jpg" target="_blank" rel="noopener"><img src="/api/scans/${s.id}/file/p${i + 1}.jpg" alt="Seite ${i + 1}" loading="lazy"></a>`).join('')}</div>
     <p class="small muted" style="margin:8px 0">${s.subject ? esc(s.subject) + ' · ' : ''}${s.date ? fmtDate(s.date) + ' · ' : ''}${scanBadge(s)}</p>
     ${s.ocr === 'ok' ? '<div class="ocrtext" id="ocrText">Lade Text …</div>' : ''}${s.ocr === 'failed' ? `<p class="small due-bad">${esc(s.error || '')}</p>` : ''}
-    <div class="row end"><button class="btn danger" data-act="scandel" data-id="${s.id}" style="margin-right:auto">Löschen</button>${s.ocr === 'ok' ? `<a class="btn" href="/api/scans/${s.id}/file/doc.pdf" target="_blank" rel="noopener">PDF öffnen</a>` : ''}<button class="btn ghost" data-act="fclose">Schließen</button></div>`);
+    <div class="row end"><button class="btn danger" data-act="scandel" data-id="${s.id}" style="margin-right:auto">Löschen</button><button class="btn" data-act="scanmenu" data-id="${s.id}">Bearbeiten</button>${s.ocr === 'ok' ? `<a class="btn" href="/api/scans/${s.id}/file/doc.pdf" target="_blank" rel="noopener">PDF öffnen</a>` : ''}<button class="btn ghost" data-act="fclose">Schließen</button></div>`);
   if (s.ocr === 'ok') fetch(`/api/scans/${s.id}/file/doc.txt`).then(r => r.text()).then(t => { const el = $('#ocrText'); if (el) el.textContent = t.trim() || 'Kein Text erkannt.'; });
 }
 async function scanText(id) {
@@ -95,3 +95,23 @@ async function searchSheet() {
   }, 250); };
 }
 
+
+/* ---------- Scan bearbeiten: umbenennen, anderem Fach zuordnen, umsortieren ---------- */
+function scanMenu(id) {
+  const s = scanById(id); if (!s) return;
+  const sibs = SCANS.filter(x => x.subject === s.subject), i = sibs.findIndex(x => x.id === id);
+  showSheet('Scan bearbeiten', `<form id="sf"><label class="field"><span>Name</span><input name="title" value="${esc(s.title)}" maxlength="120" required></label>
+    <label class="field"><span>${esc(P.terms.subject)}</span><select name="subject">${subOpts(s.subject)}${s.subject && !subjectKeys().includes(s.subject) ? `<option value="${esc(s.subject)}" selected>${esc(s.subject)}</option>` : ''}</select></label>
+    <div class="row" style="margin-bottom:12px"><button type="button" class="btn sm" data-act="scanmove" data-id="${id}" data-dir="-1" ${i > 0 ? '' : 'disabled'}>▲ Nach oben</button><button type="button" class="btn sm" data-act="scanmove" data-id="${id}" data-dir="1" ${i < sibs.length - 1 ? '' : 'disabled'}>▼ Nach unten</button></div>
+    <div class="row end"><button type="button" class="btn ghost" data-act="scanopen" data-id="${id}">Zurück</button><button class="btn primary">Speichern</button></div></form>`);
+  $('#sf').onsubmit = async e => {
+    e.preventDefault(); const d = Object.fromEntries(new FormData(e.target));
+    try { await api('PATCH', '/scans/' + id, { title: d.title, subject: d.subject }); await loadScans(); closeModal(); render(); toast('Gespeichert'); } catch (er) { toast(er.message); }
+  };
+}
+async function scanMove(id, dir) {
+  const s = scanById(id), sibs = SCANS.filter(x => x.subject === s.subject), i = sibs.findIndex(x => x.id === id), j = i + dir;
+  if (j < 0 || j >= sibs.length) return;
+  [sibs[i], sibs[j]] = [sibs[j], sibs[i]];
+  try { SCANS = (await api('POST', '/scans/order', { subject: s.subject, ids: sibs.map(x => x.id) })).scans; render(); scanMenu(id); } catch (e) { toast(e.message); }
+}

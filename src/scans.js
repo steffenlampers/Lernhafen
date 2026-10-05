@@ -92,6 +92,27 @@ function finish(id, { subject, title, date }) {
   return r;
 }
 
+/** Umbenennen oder einem anderen Fach zuordnen; die Kopie in der Bibliothek wird mitgenommen. */
+function edit(id, { title, subject }) {
+  const s = find(id); if (!s) return null;
+  const patch = {};
+  if (typeof title === 'string' && title.trim()) patch.title = title.trim().slice(0, 120);
+  if (typeof subject === 'string') patch.subject = subject.slice(0, 40);
+  if (!Object.keys(patch).length) return s;
+  if (s.mirror) { library.unmirror(s.mirror); patch.mirror = null; }
+  update(id, patch); if (s.mirror) mirrorOut(id);
+  hooks.done(find(id)); return find(id);
+}
+/** Reihenfolge der Scans eines Fachs festlegen. */
+function reorder(subject, ids) {
+  const a = list(), slots = [], mine = [];
+  a.forEach((s, i) => { if ((s.subject || '') === (subject || '')) { slots.push(i); mine.push(s); } });
+  const byId = new Map(mine.map(s => [s.id, s])), first = (Array.isArray(ids) ? ids : []).filter(i => byId.has(i));
+  const ordered = first.map(i => byId.get(i)).concat(mine.filter(s => !first.includes(s.id)));
+  slots.forEach((pos, k) => { a[pos] = ordered[k]; });
+  save(a);
+}
+
 function remove(id) {
   if (!okId(id)) return false;
   library.unmirror((find(id) || {}).mirror);
@@ -124,4 +145,4 @@ function resume() {
   list().filter(s => s.status === 'draft' && Date.now() - Date.parse(s.created) > 864e5).forEach(s => remove(s.id));
 }
 
-module.exports = { hooks, list, find, create, addPage, finish, update, remove, filePath, search, resume, hasTesseract };
+module.exports = { hooks, list, find, create, addPage, finish, update, edit, reorder, remove, filePath, search, resume, hasTesseract };

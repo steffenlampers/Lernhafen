@@ -81,6 +81,8 @@ document.addEventListener('click', e => {
     case 'scandone': scanDone(); break;
     case 'scancancel': scanCancel(); break;
     case 'scanopen': scanOpen(id); break;
+    case 'scanmenu': scanMenu(id); break;
+    case 'scanmove': scanMove(id, +b.dataset.dir); break;
     case 'scantext': scanText(id); break;
     case 'scandel': api('DELETE', '/scans/' + id).then(() => { SCANS = SCANS.filter(s => s.id !== id); for (const l of Object.values(S.notes)) l.forEach(n => { n.scans = (n.scans || []).filter(x => x !== id); }); save(); closeModal(); render(); }).catch(er => toast(er.message)); break;
     case 'filedel': api('DELETE', '/files/' + id).then(() => { FILES = FILES.filter(f => f.id !== id); render(); }).catch(er => toast(er.message)); break;

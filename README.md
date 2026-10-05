@@ -22,7 +22,7 @@ Der Name der App ist einstellbar (`APP_NAME` oder im Einrichtungs-Assistenten), 
 | **Fokus-Timer** | 10/2, 25/5 und 50/10 Minuten, mit Tageszähler. |
 | **Zentrale für alles** | Lernlinks je Profil (KI-Helfer, Fachportale) plus eigene Links, z. B. Hermes Agent oder die Lernplattform deiner Schule. |
 | **Eigenes Office** | Dokumente (Text), Tabellen mit Formeln und Präsentationen direkt in der App schreiben, ohne Programmwechsel. Gespeichert wird als echte `.docx`, `.xlsx` und `.pptx` im Ordner des Fachs. Alles steckt im selben Container, nichts muss dazu installiert werden. |
-| **Dateien verwalten** | Jede Datei lässt sich umbenennen (Endung bleibt), in ein anderes Fach verschieben und mit „Nach oben/unten“ umsortieren. Zum Umbenennen reicht im Editor ein Klick auf den Titel. |
+| **Dateien verwalten** | Jede Datei lässt sich umbenennen (Endung bleibt), in ein anderes Fach verschieben und mit „Nach oben/unten“ umsortieren. Zum Umbenennen reicht im Editor ein Klick auf den Titel. Scans lassen sich ebenso umbenennen, einem anderen Fach zuordnen und umsortieren. |
 | **Dateien und Ordner** | Pro Fach ein Ordner mit allen Dokumenten und Scans (`data/library/<Fach>/`). PDFs und Bilder öffnen sich direkt in der App. Der Plus-Knopf legt alles an einer Stelle an. |
 | **Von überall** | Mit Tailscale erreichst du Lernhafen von jedem Gerät und Ort. Alles liegt gebündelt an einem Platz, siehe „Von überall nutzen“. |
 | **Sicherung** | Alles in einer Datei herunterladen und einspielen, dazu jede Nacht eine automatische Sicherung auf dem Server (letzte 7). |
@@ -180,7 +180,7 @@ Unter „Mehr → Daten und Verbindungen → Termine im Handy-Kalender“ findes
 
 ## Stand: was getestet ist und was nicht
 
-- **Automatisch getestet (60 Tests):** Plan-Umwandlung, Schulmanager-Passwort-Hash, iCal (Wiederholungen, Ausnahmen, Verlegung, Zeitzonen, mehrtägig), Kalender-Abruf mit Fehlern, Handy-Abo (Inhalt, Erinnerungen, Falten, Link erneuern), Dateien (Typen, Pfadtricks), Scans, Suche, Sicherung, Anmeldung und Sperre, alle Profile.
+- **Automatisch getestet (61 Tests):** Plan-Umwandlung, Schulmanager-Passwort-Hash, iCal (Wiederholungen, Ausnahmen, Verlegung, Zeitzonen, mehrtägig), Kalender-Abruf mit Fehlern, Handy-Abo (Inhalt, Erinnerungen, Falten, Link erneuern), Dateien (Typen, Pfadtricks), Scans, Suche, Sicherung, Anmeldung und Sperre, alle Profile.
 - **Im echten Browser durchgespielt (Handy- und Desktop-Breite, hell und dunkel):** Einrichtungs-Assistent, Kalender-Link, Heute mit Uhrzeiten, Mitschrift zur Stunde, Termin mit Schritten, Lernplan, Karteikarten-Runde, Noten, Datei- und Scan-Upload, Wochenplan von Hand, Handy-Abo, Suche.
 - **Nicht getestet:** die Anbindung an das **echte Google** (getestet gegen einen nachgebauten Google-Server: Anmeldung per Code, Hochladen, Konflikte, Löschen, Schutz vor leerem Drive, Token-Erneuerung), der Dauerbetrieb auf dem NAS, Word-/Excel-/PowerPoint-Dateien aus fremden Programmen mit vielen Sonderfunktionen.
 - **Noch nicht enthalten:** Seitenzuschnitt und Kantenerkennung per Hand, Handschrifterkennung, mehrere Nutzer, englische Oberfläche.

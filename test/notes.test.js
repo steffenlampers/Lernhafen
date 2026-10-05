@@ -44,3 +44,13 @@ test('Umbenennen (Endung bleibt), Verschieben und Umsortieren', async () => {
   const o = (await j('POST', '/api/files/order', { subject: 'Bio', ids: [f2.id, f1.id] })).body.files.filter(f => f.subject === 'Bio').map(f => f.id);
   assert.deepStrictEqual(o, [f2.id, f1.id]);
 });
+
+test('Scan umbenennen, anderem Fach zuordnen und umsortieren; die Kopie in der Bibliothek zieht mit', async () => {
+  const scans = require('../src/scans'), mk = (t, s) => { const x = scans.create(); scans.update(x.id, { status: 'done', subject: s, title: t, pages: 0 }); return x.id; };
+  const a = mk('Eins', 'Physik'), b = mk('Zwei', 'Physik');
+  const lib = require('../src/files'); const rel = lib.mirror('Physik', 'Eins.pdf', Buffer.from('pdf'), 'Scans'); scans.update(a, { mirror: [rel] });
+  const r = (await j('PATCH', '/api/scans/' + a, { title: 'Erster', subject: 'Chemie' })).body; assert.strictEqual(r.title, 'Erster'); assert.strictEqual(r.subject, 'Chemie');
+  assert.ok(!fs.existsSync(path.join(DATA, 'library', 'Physik', 'Scans', 'Eins.pdf')));
+  const c = mk('Drei', 'Physik'), o = (await j('POST', '/api/scans/order', { subject: 'Physik', ids: [c, b] })).body.scans.filter(s => s.subject === 'Physik').map(s => s.id);
+  assert.deepStrictEqual(o, [c, b]);
+});
