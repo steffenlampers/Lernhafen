@@ -78,6 +78,7 @@ document.addEventListener('click', e => {
     case 'noteopen': { const f = noteById(id); if (f) noteModal(f.k, id); break; }
     case 'qnote': quickNote(b.dataset.d, pb(b.dataset.b), k); break;
     case 'scan': scanSheet(k); break;
+    case 'fab': fabSheet(); break;
     case 'scandone': scanDone(); break;
     case 'scancancel': scanCancel(); break;
     case 'scanopen': scanOpen(id); break;
@@ -132,6 +133,7 @@ async function loadAll() {
   try { CAL = await api('GET', '/calendars'); } catch (e) { /* ok */ }
   try { FILES = (await api('GET', '/files')).files; } catch (e) { /* ok */ }
   await loadGoogle();
+  await loadOffice();
   await loadScans();
 }
 async function boot() {

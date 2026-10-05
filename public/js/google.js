@@ -90,10 +90,12 @@ function googleMailq() {
 function connectionsCard() {       // alle Dienste an einer Stelle: nur anmelden
   const src = (P.sources || []), sm = SM && SM.configured, rows = [];
   if (src.includes('schulmanager') || sm) rows.push(['Schulmanager', sm ? (SM.ok ? 'verbunden' : 'Fehler beim letzten Abgleich') : 'nicht verbunden', sm ? 'Einstellungen' : 'Anmelden', 'data-act="smopen"', !sm]);
-  rows.push(['Google', gOn() ? esc(GS.email) + ' · Drive, Docs' + (GS.access.calendar ? ', Kalender' : '') + (GS.access.gmail ? ', Postfach' : '') : 'Docs, Drive, Kalender', gOn() ? 'Einstellungen' : 'Anmelden', 'data-g="open"', !gOn()]);
+  if (!gOn() && !(GS && GS.mode === 'central')) rows.push(['Google Drive abgleichen', 'Dateien automatisch in Drive spiegeln, ohne Einrichtung bei Google', 'So geht’s', 'data-d="sync"', false]);
+  else rows.push(['Google', gOn() ? esc(GS.email) + ' · Drive, Docs' + (GS.access.calendar ? ', Kalender' : '') + (GS.access.gmail ? ', Postfach' : '') : 'Docs, Drive, Kalender', gOn() ? 'Einstellungen' : 'Anmelden', 'data-g="open"', !gOn()]);
+  rows.push(['Office im Browser', OFFICE.ok ? 'Word, Excel und PowerPoint sind bereit' : (OFFICE.enabled ? 'Nicht erreichbar' : 'Nicht aktiviert'), OFFICE.ok ? '' : 'Aktivieren', 'data-d="hint"', false]);
   rows.push(['Kalender-Link', CAL.calendars.length ? CAL.calendars.length + ' verbunden' : 'z. B. Famanice, Hochschule, Moodle', CAL.calendars.length ? 'Ändern' : 'Hinzufügen', 'data-act="calsopen"', false]);
   rows.push(['Wochenplan von Hand', (S.timetable || []).length ? S.timetable.length + ' Einträge' : 'wenn es keine Quelle gibt', 'Bearbeiten', 'data-act="ttopen"', false]);
-  return `<div class="card"><div class="card-head"><h2>Verbindungen</h2></div>${rows.map(r => `<div class="item"><div class="grow"><b>${r[0]}</b><div class="small muted">${r[1]}</div></div><button class="btn sm ${r[4] ? 'primary' : ''}" ${r[3]}>${r[2]}</button></div>`).join('')}</div>`;
+  return `<div class="card"><div class="card-head"><h2>Verbindungen</h2></div>${rows.map(r => `<div class="item"><div class="grow"><b>${r[0]}</b><div class="small muted">${r[1]}</div></div>${r[2] ? `<button class="btn sm ${r[4] ? 'primary' : ''}" ${r[3]}>${r[2]}</button>` : '<span class="chip">bereit</span>'}</div>`).join('')}</div>`;
 }
 function gmailCard() { return gOn() && GS.access.gmail ? '<div class="card" id="gmailBox"><div class="card-head"><h2>Postfach</h2></div><p class="empty">Lade …</p></div>' : ''; }
 function googleCard() {          // Karte unter „Mehr“ (alt)

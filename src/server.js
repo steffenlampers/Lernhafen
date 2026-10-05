@@ -13,6 +13,7 @@ const feed = require('./feed');
 const files = require('./files');
 const google = require('./google');
 const fs = require('fs');
+const office = require('./office');
 
 const app = express();
 app.disable('x-powered-by');
@@ -20,7 +21,7 @@ app.set('trust proxy', true);
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'same-origin');
-  res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; frame-ancestors 'self'; frame-src 'self'");
+  res.setHeader('Content-Security-Policy', `default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; frame-ancestors 'self'; frame-src 'self'${office.enabled() ? ' ' + office.publicOrigin(req) : ''}`);
   next();
 });
 app.use(express.json({ limit: '5mb' }));
@@ -41,6 +42,8 @@ app.get('/feed/:token/termine.ics', (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   res.send(feed.build(st, profile, (st.settings && st.settings.appName) || config.appName));
 });
+
+office.mount(app, express);      // Collabora ruft diese Adressen selbst auf: gesichert durch ein Token pro Datei, nicht durch das Passwort
 
 /* Rückruf von Google über die Weiterleitungsseite. Ohne Anmeldung erreichbar, weil nur der geheime Status der offenen Verbindung zählt. */
 app.get('/api/google/callback', async (req, res) => {
@@ -193,8 +196,14 @@ app.post('/api/calendars/sync', wrap(async (req, res) => res.json({ calendars: c
 app.get('/api/feed', (req, res) => res.json({ path: `/feed/${feed.token()}/termine.ics` }));
 app.post('/api/feed/rotate', (req, res) => { feed.rotate(); res.json({ path: `/feed/${feed.token()}/termine.ics` }); });
 
+/* ---- Office im Browser ---- */
+app.get('/api/office/status', wrap(async (req, res) => res.json(await office.status())));
+app.post('/api/library/new', wrap(async (req, res) => { const b = req.body || {}; res.json(files.create(b.kind, b.subject, b.name)); }));
+app.post('/api/office/open', wrap(async (req, res) => res.json(await office.editorUrl(req, String((req.body || {}).id || '')))));
+
 /* ---- Dateien zu Fächern ---- */
 app.get('/api/files', (req, res) => res.json({ files: files.list() }));
+app.post('/api/files/:id/subject', wrap(async (req, res) => { const f = files.update(req.params.id, { subject: String((req.body || {}).subject || '') }); if (!f) throw new Error('Datei nicht gefunden.'); res.json(f); }));
 app.post('/api/files', express.raw({ type: () => true, limit: '100mb' }), wrap(async (req, res) => {
   if (!Buffer.isBuffer(req.body)) throw new Error('Keine Datei empfangen.');
   res.json(files.add(req.body, req.query.name, req.query.subject));
@@ -244,6 +253,7 @@ app.use((err, req, res, next) => res.status(err.status || 500).json({ error: err
 if (require.main === module) {
   app.listen(config.port, () => {
     console.log(`${config.appName} ${config.version} läuft auf Port ${config.port}, Daten in ${config.dataDir}`);
+    files.migrate();
     scans.resume();
     scheduler.start();
   });

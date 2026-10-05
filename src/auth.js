@@ -44,4 +44,4 @@ function guard(req, res, next) {
   res.status(401).json({ error: 'login', loginRequired: true });
 }
 
-module.exports = { enabled, authed, login, logout, guard };
+module.exports = { sign, same, enabled, authed, login, logout, guard };

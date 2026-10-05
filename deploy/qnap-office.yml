@@ -1,0 +1,40 @@
+# Für QNAP Container Station: Anwendungen → Erstellen → YAML einfügen.
+# Lernhafen MIT eingebautem Office (Word, Excel, PowerPoint im Browser). Zwei Container: die App und das Office (Collabora).
+# Vorher ändern: APP_PASSWORD. Der Port 8091 ist frei, wenn 8088 und 8090 belegt sind (EduFocus, Stirling-PDF). Wenn du ihn änderst,
+# ändere ihn an allen drei Stellen mit „PORT“ bzw. „8091“.
+# Das Office braucht etwa 1 GB Arbeitsspeicher. Die Daten liegen in /share/Container/lernhafen/data (Ordner „library“ = alle Dokumente).
+# Aufruf im Browser: http://<NAS-Adresse>:8091   (das Office läuft auf Port 9980, er muss vom Browser aus erreichbar sein)
+services:
+  lernhafen:
+    image: ghcr.io/steffenlampers/lernhafen:latest
+    container_name: lernhafen
+    restart: unless-stopped
+    ports:
+      - "8091:8091"
+    environment:
+      TZ: Europe/Berlin
+      PORT: "8091"
+      APP_PASSWORD: "bitte-aendern"       # ANPASSEN
+      APP_NAME: Lernhafen
+      SYNC_HOUR: "6"
+      COLLABORA_URL: http://collabora:9980
+      WOPI_HOST_URL: http://lernhafen:8091
+    volumes:
+      - /share/Container/lernhafen/data:/data
+    depends_on:
+      - collabora
+    security_opt:
+      - no-new-privileges:true
+
+  collabora:
+    image: collabora/code:latest
+    container_name: lernhafen-office
+    restart: unless-stopped
+    ports:
+      - "9980:9980"
+    environment:
+      aliasgroup1: http://lernhafen:8091
+      extra_params: --o:ssl.enable=false --o:ssl.termination=false --o:net.frame_ancestors=* --o:user_interface.mode=classic
+      dictionaries: de en
+    cap_add:
+      - MKNOD

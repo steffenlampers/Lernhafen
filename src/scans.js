@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const { execFile } = require('child_process');
 const config = require('./config');
 const store = require('./store');
+const library = require('./files');
 
 let sharp = null;
 try { sharp = require('sharp'); } catch (e) { /* ohne sharp werden Fotos unverändert gespeichert */ }
@@ -22,6 +23,16 @@ function update(id, patch) {
   Object.assign(s, patch); save(a); return s;
 }
 
+/** Kopie in der Bibliothek (data/library/<Fach>/Scans), damit Sync-Programme sie mitnehmen. */
+function mirrorOut(id) {
+  try {
+    const s = find(id); if (!s || s.mirror) return;
+    const rels = [], pdf = filePath(id, 'doc.pdf');
+    if (pdf) rels.push(library.mirror(s.subject, s.title + '.pdf', fs.readFileSync(pdf), 'Scans'));
+    else for (let i = 1; i <= s.pages; i++) rels.push(library.mirror(s.subject, `${s.title} - Seite ${i}.jpg`, fs.readFileSync(filePath(id, `p${i}.jpg`)), 'Scans'));
+    update(id, { mirror: rels });
+  } catch (e) { /* die Kopie ist ein Zusatz */ }
+}
 const hooks = { done: () => {} };      // der Server hängt hier z. B. das Sichern in Google Drive ein
 let ocrAvailable = null;
 function hasTesseract() {
@@ -59,13 +70,13 @@ async function ocr(id) {
   const s = find(id), d = dirOf(id);
   if (!s) return;
   try {
-    if (!(await hasTesseract())) { update(id, { status: 'done', ocr: 'unavailable' }); hooks.done(find(id)); return; }
+    if (!(await hasTesseract())) { update(id, { status: 'done', ocr: 'unavailable' }); mirrorOut(id); hooks.done(find(id)); return; }
     const files = Array.from({ length: s.pages }, (_, i) => path.join(d, `p${i + 1}.jpg`));
     fs.writeFileSync(path.join(d, 'list.txt'), files.join('\n') + '\n');
     await run('tesseract', [path.join(d, 'list.txt'), path.join(d, 'doc'), '-l', config.ocrLang, 'pdf', 'txt'], { cwd: d });
     const text = fs.existsSync(path.join(d, 'doc.txt')) ? fs.readFileSync(path.join(d, 'doc.txt'), 'utf8') : '';
     update(id, { status: 'done', ocr: 'ok', snippet: text.replace(/\s+/g, ' ').trim().slice(0, 300) });
-    hooks.done(find(id));
+    mirrorOut(id); hooks.done(find(id));
   } catch (e) {
     update(id, { status: 'done', ocr: 'failed', error: String(e.message || e).slice(0, 300) });
   }
@@ -83,6 +94,7 @@ function finish(id, { subject, title, date }) {
 
 function remove(id) {
   if (!okId(id)) return false;
+  library.unmirror((find(id) || {}).mirror);
   save(list().filter(s => s.id !== id));
   fs.rmSync(dirOf(id), { recursive: true, force: true });
   return true;

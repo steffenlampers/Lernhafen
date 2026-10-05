@@ -174,9 +174,6 @@ function scanRow(s) {
     <div class="row"><button class="btn sm" data-act="scanopen" data-id="${s.id}">Öffnen</button>${gOn() && s.status === 'done' ? `<button class="btn sm ghost" data-g="dsave" data-kind="scan" data-id="${s.id}" data-k="${esc(s.subject || '')}">${s.drive ? 'In Drive ✓' : 'In Drive'}</button>` : ''}</div></div>`;
 }
 const sizeText = n => n > 1048576 ? fnum(n / 1048576) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
-function fileRow(f) {
-  return `<div class="item"><div class="grow"><a href="/api/files/${f.id}/download" target="_blank" rel="noopener"><b>${esc(f.name)}</b></a><div class="small muted">${sizeText(f.size)}</div></div>${gOn() ? `<button class="icon-btn" data-g="dsave" data-kind="file" data-id="${f.id}" data-k="${esc(f.subject || '')}">In Drive</button>` : ''}<button class="icon-btn" data-act="filedel" data-id="${f.id}">Löschen</button></div>`;
-}
 function vFach() {
   if (openSub) return vSubject(openSub);
   const t = today(), ks = subjectKeys();
@@ -202,8 +199,7 @@ function vSubject(k) {
   ${googleSubjectCard(k)}
   ${evs.length ? `<div class="card"><div class="card-head"><h2>Anstehend</h2></div>${evs.map(evRow).join('')}</div>` : ''}
   <div class="card"><div class="card-head"><h2>Mitschriften</h2></div>${notes.length ? notes.map(n => `<div class="item"><div class="grow"><b>${esc(n.title || 'Ohne Titel')}</b><div class="small muted">${n.date ? fmtDate(n.date) : ''}${n.scans && n.scans.length ? ` · ${n.scans.length} Scan${n.scans.length === 1 ? '' : 's'}` : ''}</div>${n.body ? `<div class="small muted">${esc(n.body.replace(/\s+/g, ' ').slice(0, 100))}</div>` : ''}</div><button class="btn sm" data-act="noteopen" data-id="${n.id}">Öffnen</button></div>`).join('') : '<p class="empty">Noch keine Mitschrift. Lege eine an oder scanne eine Seite.</p>'}</div>
-  <details class="more" ${files.length ? 'open' : ''}><summary>Dateien (${files.length})</summary><div class="card" style="margin-top:8px">${files.map(fileRow).join('') || '<p class="empty">Noch keine Dateien.</p>'}
-    <div class="row" style="margin-top:10px"><label class="btn sm" style="cursor:pointer">Datei hinzufügen<input type="file" id="fileUp" data-k="${esc(k)}" multiple hidden></label><span class="small muted">Skripte, Folien, PDFs bis 100 MB</span></div></div></details>
+  ${docsCard(k)}
   <details class="more" ${scans.length ? 'open' : ''}><summary>Scans (${scans.length})</summary><div class="card" style="margin-top:8px">${scans.length ? scans.map(scanRow).join('') : '<p class="empty">Noch keine Scans.</p>'}</div></details></div>`;
 }
 

@@ -3,6 +3,8 @@
 Die selbst gehostete Lernzentrale für Ausbildung, Schule und Studium, gebaut für Menschen mit ADHS: wenig auf einmal, klare Struktur, kleine Schritte.
 Sie läuft in Docker auf deinem NAS (z. B. QNAP) oder jedem Server im Heimnetz. Deine Daten bleiben bei dir.
 
+**Ein Platz für alles:** Stundenplan, Termine, Mitschriften, Scans, Word-, Excel- und PowerPoint-Dateien, Karteikarten, Noten und Lernlinks in einer App. Nichts, wofür du zwischen Programmen, Tabs und Cloud-Diensten wechseln musst.
+
 Der Name der App ist einstellbar (`APP_NAME` oder im Einrichtungs-Assistenten), sodass du sie als „StudyDock“, „Mein Studium“ oder wie du willst benutzen kannst. Alles Berufsspezifische steckt in **Profil-Paketen**.
 
 ## Was sie kann
@@ -19,7 +21,10 @@ Der Name der App ist einstellbar (`APP_NAME` oder im Einrichtungs-Assistenten), 
 | **Suche** | Findet Begriffe in Mitschriften, im erkannten Text von Scans, in Karten, Dateien und Terminen. |
 | **Fokus-Timer** | 10/2, 25/5 und 50/10 Minuten, mit Tageszähler. |
 | **Zentrale für alles** | Lernlinks je Profil (KI-Helfer, Fachportale) plus eigene Links, z. B. Hermes Agent oder die Lernplattform deiner Schule. |
-| **Google** | Mit einem Klick bei Google anmelden: Mitschriften als **Google Docs** (Ordner „Lernhafen / Fach“ legt die App selbst an), Scans automatisch in **Drive** sichern, **Google Kalender** anzeigen und Termine mit Erinnerungen dorthin schreiben, ungelesene **Gmail**-Nachrichten anzeigen, Suche auch in Drive. |
+| **Office im Browser** | Dokumente, Tabellen und Präsentationen anlegen und direkt in der App bearbeiten (Word-, Excel- und PowerPoint-Dateien, über Collabora Online). Alles bleibt als normale Datei im Ordner des Fachs. Optional, siehe „Office im Browser“. |
+| **Dateien und Ordner** | Pro Fach ein Ordner mit allen Dokumenten und Scans (`data/library/<Fach>/`). PDFs und Bilder öffnen sich direkt in der App. Der Plus-Knopf legt alles an einer Stelle an. |
+| **Abgleich mit Google Drive** | Über das NAS (QNAP Hybrid Backup Sync, Synology Cloud Sync, rclone): Anmelden, Ordner wählen, fertig. Bei Google ist dafür nichts einzurichten. |
+| **Google direkt** (optional) | Mit einem Klick bei Google anmelden: Mitschriften als **Google Docs** (Ordner „Lernhafen / Fach“ legt die App selbst an), Scans automatisch in **Drive** sichern, **Google Kalender** anzeigen und Termine mit Erinnerungen dorthin schreiben, ungelesene **Gmail**-Nachrichten anzeigen, Suche auch in Drive. |
 | **Sicherung** | Alle Daten als eine Datei herunterladen und wieder einspielen. |
 
 ## Profile
@@ -92,7 +97,32 @@ Das Skript lädt das neue Image, startet den Container neu und räumt alte Image
 
 Hast du Lernhafen über die Container Station per YAML angelegt, geht das Update dort ebenfalls über „Anwendungen“, indem du die Anwendung neu erstellen lässt (das Image wird dabei neu geladen). Mit der Compose-Datei auf dem NAS und `update.sh` bist du unabhängig davon.
 
-## Google verbinden
+## Office im Browser (Word, Excel, PowerPoint)
+
+Mit dem eingebauten Office bearbeitest du Dokumente, Tabellen und Präsentationen **in der App**, ohne Programmwechsel. Dahinter arbeitet **Collabora Online** (kostenlose Entwickler-Ausgabe), ein zweiter Container, den Lernhafen über das Standardprotokoll WOPI nutzt. Die Dateien bleiben als `.docx`, `.xlsx` und `.pptx` in `data/library/<Fach>/` und lassen sich mit Word, Excel, PowerPoint, LibreOffice oder Google Drive öffnen.
+
+**Aktivieren (einmalig):**
+- **QNAP Container Station:** Inhalt von [`deploy/qnap-office.yml`](deploy/qnap-office.yml) einfügen, `APP_PASSWORD` ändern, erstellen.
+- **Docker Compose:** `docker compose -f docker-compose.office.yml up -d`, Update mit `sh update.sh docker-compose.office.yml`.
+
+Danach erscheinen in jedem Fach die Knöpfe „Neues Dokument“, „Neue Tabelle“ und „Neue Präsentation“, und hochgeladene Word-, Excel- und PowerPoint-Dateien lassen sich mit einem Klick öffnen. Das Office braucht etwa 1 GB Arbeitsspeicher und läuft auf x86-NAS am besten.
+
+**Gut zu wissen:** Der Browser muss das Office auf Port 9980 unter demselben Rechnernamen erreichen wie Lernhafen. Das ist im Heimnetz der Normalfall. Bei einem Aufruf über HTTPS (zum Beispiel Tailscale Serve) muss auch das Office über HTTPS erreichbar sein, dafür gibt es `COLLABORA_PUBLIC_URL`.
+
+## Mit Google Drive abgleichen (ohne Google-Projekt)
+
+Alle Dateien liegen als normale Dateien in `data/library`. Dein NAS gleicht diesen Ordner selbst mit Google Drive ab, und die Anmeldung bei Google erledigt das NAS-Programm, nicht Lernhafen:
+
+1. **QNAP:** App **Hybrid Backup Sync** → **Sync** → **Erstellen** → *Einseitige Synchronisierung* (NAS → Drive, am sichersten) oder *Zwei-Wege-Sync*.
+2. Ziel **Google Drive** wählen und mit deinem Google-Konto anmelden.
+3. Quelle: `/Container/lernhafen/data/library`, Ziel: ein Ordner in Drive.
+4. Zeitplan festlegen, zum Beispiel stündlich.
+
+Bei Synology heißt das Gegenstück „Cloud Sync“. Bearbeite ein Dokument nicht gleichzeitig hier und in Google. Die Anleitung steht auch in der App unter „Mehr → Verbindungen → Google Drive abgleichen“.
+
+## Google direkt verbinden (optional)
+
+Die Direktverbindung ist **nicht nötig**, wenn du den Abgleich über das NAS nutzt. Sie bietet zusätzlich Google Docs als Mitschrift-Format, den Google Kalender und Gmail. Sie setzt eine Google-App-Registrierung voraus, die der Betreiber einmalig anlegt:
 
 **Für Nutzer:** „Mehr → Verbindungen → Google → Anmelden“, mit dem normalen Google-Konto anmelden und den Zugriff erlauben. Mehr ist nicht nötig. Danach legt die App die Mitschrift-Dokumente und Ordner selbst an. Schalter gibt es nur drei: Scans automatisch in Drive sichern, Termine in Google Kalender schreiben, Google-Kalender anzeigen. Google zeigt beim ersten Mal „Nicht bestätigte App“. Das ist normal, weil die App nicht von Google geprüft ist: auf „Erweitert“ und „Weiter“ klicken.
 
@@ -147,9 +177,9 @@ Unter „Mehr → Daten und Verbindungen → Termine im Handy-Kalender“ findes
 
 ## Stand: was getestet ist und was nicht
 
-- **Automatisch getestet (44 Tests):** Plan-Umwandlung, Schulmanager-Passwort-Hash, iCal (Wiederholungen, Ausnahmen, Verlegung, Zeitzonen, mehrtägig), Kalender-Abruf mit Fehlern, Handy-Abo (Inhalt, Erinnerungen, Falten, Link erneuern), Dateien (Typen, Pfadtricks), Scans, Suche, Sicherung, Anmeldung und Sperre, alle Profile.
+- **Automatisch getestet (53 Tests):** Plan-Umwandlung, Schulmanager-Passwort-Hash, iCal (Wiederholungen, Ausnahmen, Verlegung, Zeitzonen, mehrtägig), Kalender-Abruf mit Fehlern, Handy-Abo (Inhalt, Erinnerungen, Falten, Link erneuern), Dateien (Typen, Pfadtricks), Scans, Suche, Sicherung, Anmeldung und Sperre, alle Profile.
 - **Im echten Browser durchgespielt (Handy- und Desktop-Breite, hell und dunkel):** Einrichtungs-Assistent, Kalender-Link, Heute mit Uhrzeiten, Mitschrift zur Stunde, Termin mit Schritten, Lernplan, Karteikarten-Runde, Noten, Datei- und Scan-Upload, Wochenplan von Hand, Handy-Abo, Suche.
-- **Nicht getestet:** Die Anmeldung und alle Aufrufe mit **echtem Google** (getestet mit einem nachgebauten Google-Server, im Browser und automatisch: Anmelden mit Rückruf, Token-Erneuerung, Drive, Docs, Kalender lesen und schreiben, Gmail, Scans in Drive sichern; ob Google die Weiterleitungsseite auf github.io bei deiner App akzeptiert, zeigt erst der erste Versuch), die eigene IP per macvlan auf einem echten NAS (die Konfiguration ist geprüft, der Start mit Port 80 ohne Root läuft im GitHub-Test), der Live-Abruf bei Schulmanager mit echten Zugangsdaten, die Texterkennung mit Tesseract im fertigen Image (der GitHub-Lauf prüft, dass Deutsch und die PDF-Schrift vorhanden sind), der Betrieb auf einem echten NAS und die Kalender-Abos auf iPhone und Android.
+- **Nicht getestet:** Das Office mit dem **echten Collabora** (getestet mit einem nachgebauten Collabora: Editor-Adresse, WOPI-Zugriff mit Token, Laden und Speichern, im Browser mit Öffnen, Speichern und Zurück; ob Collabora die Einbettung bei deiner Adresse zulässt, zeigt der erste Versuch), die Anmeldung und alle Aufrufe mit **echtem Google** (getestet mit einem nachgebauten Google-Server, im Browser und automatisch: Anmelden mit Rückruf, Token-Erneuerung, Drive, Docs, Kalender lesen und schreiben, Gmail, Scans in Drive sichern; ob Google die Weiterleitungsseite auf github.io bei deiner App akzeptiert, zeigt erst der erste Versuch), die eigene IP per macvlan auf einem echten NAS (die Konfiguration ist geprüft, der Start mit Port 80 ohne Root läuft im GitHub-Test), der Live-Abruf bei Schulmanager mit echten Zugangsdaten, die Texterkennung mit Tesseract im fertigen Image (der GitHub-Lauf prüft, dass Deutsch und die PDF-Schrift vorhanden sind), der Betrieb auf einem echten NAS und die Kalender-Abos auf iPhone und Android.
 - **Noch nicht enthalten:** Seitenzuschnitt und Kantenerkennung per Hand, Handschrifterkennung, mehrere Nutzer, englische Oberfläche.
 
 ## Entwicklung

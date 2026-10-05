@@ -167,3 +167,13 @@ textarea{resize:vertical}
 
 .btn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
 .calrow input,.calrow select{min-height:40px}
+
+#editor{position:fixed;inset:0;z-index:45;background:var(--bg);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+#editor[hidden]{display:none}
+.ebar{display:flex;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--surface)}
+.ebar b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#eframe{flex:1;border:0;width:100%;background:#fff}
+#eimg{flex:1;min-height:0;object-fit:contain;width:100%;background:var(--bg)}
+.linkbtn{background:none;border:0;padding:0;text-align:left;color:var(--accent);font:inherit;cursor:pointer;min-height:32px}
+.linkbtn:hover{text-decoration:underline}
+code{background:var(--surface2);padding:1px 6px;border-radius:6px;font-size:.88em;overflow-wrap:anywhere}
